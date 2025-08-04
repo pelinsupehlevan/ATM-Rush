@@ -30,6 +30,10 @@ public class PlayerController : MonoBehaviour
     public float backDistance = 3f;
     public LayerMask obstacleLayer;
 
+    private List<Collectable> collectedList = new List<Collectable>();
+
+    public float moneyAmount = 0;
+
 
     private void Awake()
     {
@@ -108,16 +112,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (isRecovering)  return;
-
-        if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle"))
-        {
-            StartCoroutine(Recover());
-        }
-    }
-
     private IEnumerator Recover()
     {
         isRecovering = true;
@@ -146,6 +140,120 @@ public class PlayerController : MonoBehaviour
     {
         isRunning = true;
     }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (isRecovering)  return;
+
+        if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle") && !other.CompareTag("ATM") && !other.CompareTag("Transformer"))
+        {
+            StartCoroutine(Recover());
+        }
+
+        if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
+        {
+            Collectable collectable = other.GetComponent<Collectable>();
+            if (collectable != null && !collectable.isCollected)
+            {
+                collectable.Collect(this);
+            }
+        }
+
+    }
+
+
+    public void Collect(Collectable newCollectable)
+    {
+        if (collectedList.Count > 0)
+        {
+            collectedList[collectedList.Count - 1].SetTip(false);
+        }
+
+        collectedList.Add(newCollectable);
+
+        Transform target;
+
+        if (collectedList.Count == 1)
+        {
+            target = this.transform;
+            newCollectable.collectDistance = 2f;
+        }
+        else
+        {
+            target = collectedList[collectedList.Count - 2].transform;
+            newCollectable.collectDistance = 1f;
+
+        }
+
+        newCollectable.followTarget = target;
+        newCollectable.SetTip(true);
+    }
+
+    public void DropCollectable(Collectable collectable)
+    {
+        if (collectable == null || !collectedList.Contains(collectable)) return;
+        
+        collectable.isCollected = false;
+        collectable.followTarget = null;
+        collectable.SetTip(false);
+        collectable.gameObject.layer = LayerMask.NameToLayer("Collectable");
+
+        //buna bakkkkkkkkkkkkkkkkkkkkk cirkin oldu
+        Vector3 dropOffset = transform.position + Vector3.forward * Random.Range(6f, 9f) +
+                    Vector3.right * Random.Range(-2f, 2f);
+        collectable.transform.position = dropOffset;
+
+        collectedList.Remove(collectable);
+
+        if (collectedList.Count > 0)
+        {
+            collectedList[collectedList.Count - 1].SetTip(true);
+        }
+        
+    }
+
+    public void DestroyCollectable(Collectable collectable)
+    {
+        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+        collectable.SetTip(false);
+        collectedList.Remove(collectable);
+        Destroy(collectable.gameObject);
+
+        if (collectedList.Count > 0)
+        {
+            collectedList[collectedList.Count - 1].SetTip(true);
+        }
+    }
+
+    public void Deposit(Collectable collectable)
+    {
+        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+        collectable.SetTip(false);
+        collectedList.Remove(collectable);
+        Destroy(collectable.gameObject);
+
+        if (collectedList.Count > 0)
+        {
+            collectedList[collectedList.Count - 1].SetTip(true);
+        }
+        moneyAmount += collectable.value;
+        Debug.Log("Current Money: " + moneyAmount);
+    }
+
+    //public void ResetPlayer()
+    //{
+    //    isRunning = false;
+    //    isSliding = false;
+    //    isRecovering = false;
+    //    currentX = transform.position.x;
+    //    targetX = transform.position.x;
+    //    collectedList.Clear();
+    //    moneyAmount = 0;
+    //    transform.position = Vector3.zero;
+    //}   
+
 
 
 }
