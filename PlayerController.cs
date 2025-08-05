@@ -30,9 +30,12 @@ public class PlayerController : MonoBehaviour
     public float backDistance = 3f;
     public LayerMask obstacleLayer;
 
-    private List<Collectable> collectedList = new List<Collectable>();
+    public List<Collectable> collectedList = new List<Collectable>();
 
     public float moneyAmount = 0;
+
+    private float transformCooldown = 1.0f;
+    private float lastTransformTime = -10f;
 
 
     private void Awake()
@@ -189,6 +192,56 @@ public class PlayerController : MonoBehaviour
         newCollectable.SetTip(true);
     }
 
+    public void RequestTransform(Collectable toTransform)
+    {
+        if (Time.time - lastTransformTime < transformCooldown) return;
+        lastTransformTime = Time.time;
+
+        int index = collectedList.IndexOf(toTransform);
+        if (index == -1) return;
+
+        GameObject nextPrefab = null;
+        string nextTag = null;
+
+        if (toTransform.CompareTag("Cash"))
+        {
+            nextPrefab = toTransform.collectables[1]; 
+            nextTag = "Gold";
+        }
+        else if (toTransform.CompareTag("Gold"))
+        {
+            nextPrefab = toTransform.collectables[2]; 
+            nextTag = "Diamond";
+        }
+        else if (toTransform.CompareTag("Diamond"))
+        {
+            return;
+        }
+
+        if (nextPrefab == null) return;
+
+        GameObject newObj = Instantiate(nextPrefab, toTransform.transform.position, toTransform.transform.rotation);
+        newObj.transform.localScale = toTransform.transform.localScale;
+        newObj.tag = nextTag;
+        newObj.layer = LayerMask.NameToLayer("Collected");
+
+        Collectable newCollectable = newObj.GetComponent<Collectable>();
+        newCollectable.isCollected = true;
+        newCollectable.player = this;
+        newCollectable.followTarget = toTransform.followTarget;
+        newCollectable.collectDistance = toTransform.collectDistance;
+        newCollectable.SetTip(toTransform == collectedList[collectedList.Count - 1]); 
+
+        collectedList[index] = newCollectable;
+
+        Destroy(toTransform.gameObject);
+
+        //for (int i = 0; i < collectedList.Count; i++)
+        //{
+        //    collectedList[i].SetTip(i == collectedList.Count - 1);
+        //}
+    }
+
     public void DropCollectable(Collectable collectable)
     {
         if (collectable == null || !collectedList.Contains(collectable)) return;
@@ -241,20 +294,6 @@ public class PlayerController : MonoBehaviour
         moneyAmount += collectable.value;
         Debug.Log("Current Money: " + moneyAmount);
     }
-
-    //public void ResetPlayer()
-    //{
-    //    isRunning = false;
-    //    isSliding = false;
-    //    isRecovering = false;
-    //    currentX = transform.position.x;
-    //    targetX = transform.position.x;
-    //    collectedList.Clear();
-    //    moneyAmount = 0;
-    //    transform.position = Vector3.zero;
-    //}   
-
-
 
 }
 
