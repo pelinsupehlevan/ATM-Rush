@@ -3,202 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-//public class Collectable : MonoBehaviour
-//{
-
-//    public bool isCollected = false;
-
-//    public float collectDistance = 1f;
-//    public Transform followTarget;
-//    public float followSpeed = 7f;
-//    private bool isTip = false;
-//    private PlayerController player;
-
-//    public float value = 100f;
-//    public GameObject[] collectables; // 0 coin 1 gold 2 diamond
-//    private bool hasTransformed = false;
-
-
-//    // Start is called before the first frame update
-//    void Start()
-//    {
-
-//    }
-
-//    // Update is called once per frame
-//    void Update()
-//    {
-//        FollowTarget();
-//    }
-
-//    public void Collect(PlayerController player)
-//    {
-//        if (isCollected) return;
-
-//        isCollected = true;
-//        this.player = player;
-
-//        gameObject.layer = LayerMask.NameToLayer("Collected");
-
-//        player.Collect(this);
-//    }
-
-
-//    public void FollowTarget()
-//    {
-//        if (!isCollected || followTarget == null) return;
-
-//        Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
-//        transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
-//    }
-
-//    public void SetTip(bool value)
-//    {
-//        isTip = value;
-//    }
-
-//    private void OnTriggerEnter(Collider other)
-//    {
-//        if (!isCollected) return;
-
-//        if (isTip && other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
-//        {
-//            Collectable otherCollectable = other.GetComponent<Collectable>();
-//            if (otherCollectable != null && !otherCollectable.isCollected)
-//            {
-//                otherCollectable.Collect(player);
-//            }
-//        }
-
-//        if (isTip && other.CompareTag("Drop"))
-//        {
-//            player.DropCollectable(this);
-//        }
-
-//        if (isTip && other.CompareTag("Destroy"))
-//        {
-//            player.DestroyCollectable(this);
-//        }
-
-//        if (isTip && other.CompareTag("ATM"))
-//        {
-//            player.Deposit(this);
-//        }
-
-//        if (other.CompareTag("Transformer") && !hasTransformed)
-//        {
-//            hasTransformed = true;
-//            Transform();
-//        }
-
-//    }
-//    public void OnTriggerExit(Collider other)
-//    {
-//        if (other.CompareTag("Transformer"))
-//        {
-//            hasTransformed = false;
-//        }
-
-//    }
-
-//    public void Transform()
-//    {
-//        //if (CompareTag("Cash")) {
-//        //    //GameObject newCollectable = Instantiate(collectables[1], transform.position, Quaternion.identity);
-//        //    //newCollectable.transform.localScale = transform.localScale;
-//        //    //Destroy(gameObject);
-//        //    //newCollectable.tag = "Gold";
-//        //    //player.Collect(newCollectable.GetComponent<Collectable>());
-
-//        //    int indexInList = player.collectedList.IndexOf(this);
-//        //    if (indexInList == -1) return; 
-
-//        //    GameObject newObject = Instantiate(collectables[1], transform.position, transform.rotation);
-//        //    newObject.transform.localScale = transform.localScale;
-//        //    newObject.tag = "Gold";
-
-//        //    Collectable newCollectable = newObject.GetComponent<Collectable>();
-//        //    newCollectable.isCollected = true;
-//        //    newCollectable.player = player;
-//        //    newCollectable.followTarget = this.followTarget;
-//        //    newCollectable.collectDistance = this.collectDistance;
-//        //    newCollectable.SetTip(this.isTip);
-//        //    newObject.layer = LayerMask.NameToLayer("Collected");
-
-//        //    player.collectedList[indexInList] = newCollectable;
-
-//        //    Destroy(gameObject);
-
-//        //}
-
-//        //if (CompareTag("Gold")) {
-//        //    //GameObject newCollectable = Instantiate(collectables[2], transform.position, Quaternion.identity);
-//        //    //newCollectable.transform.localScale = transform.localScale;
-//        //    //Destroy(gameObject);
-//        //    //newCollectable.tag = "Diamond";
-//        //    //player.Collect(newCollectable.GetComponent<Collectable>());
-
-//        //    int indexInList = player.collectedList.IndexOf(this);
-//        //    if (indexInList == -1) return;
-
-//        //    GameObject newObject = Instantiate(collectables[2], transform.position, transform.rotation);
-//        //    newObject.transform.localScale = transform.localScale;
-//        //    newObject.tag = "Diamond";
-
-//        //    Collectable newCollectable = newObject.GetComponent<Collectable>();
-//        //    newCollectable.isCollected = true;
-//        //    newCollectable.player = player;
-//        //    newCollectable.followTarget = this.followTarget;
-//        //    newCollectable.collectDistance = this.collectDistance;
-//        //    newCollectable.SetTip(this.isTip);
-//        //    newObject.layer = LayerMask.NameToLayer("Collected");
-
-//        //    player.collectedList[indexInList] = newCollectable;
-
-//        //    Destroy(gameObject);
-
-//        //}
-
-//        //if (CompareTag("Diamond")) return;
-
-
-
-
-
-//        int indexInList = player.collectedList.IndexOf(this);
-//        if (indexInList == -1) return;
-
-//        GameObject newObject = null;
-
-//        if (CompareTag("Cash"))
-//            newObject = Instantiate(collectables[1], transform.position, transform.rotation);
-//        else if (CompareTag("Gold"))
-//            newObject = Instantiate(collectables[2], transform.position, transform.rotation);
-//        else if (CompareTag("Diamond"))
-//            return;
-
-//        if (newObject == null) return;
-
-//        newObject.transform.localScale = transform.localScale;
-//        newObject.tag = CompareTag("Cash") ? "Gold" : "Diamond";
-//        newObject.layer = LayerMask.NameToLayer("Collected");
-
-//        Collectable newCollectable = newObject.GetComponent<Collectable>();
-//        newCollectable.isCollected = true;
-//        newCollectable.player = player;
-//        newCollectable.followTarget = this.followTarget;
-//        newCollectable.collectDistance = this.collectDistance;
-//        newCollectable.SetTip(this.isTip);
-
-//        player.collectedList[indexInList] = newCollectable;
-
-//        Destroy(gameObject);
-//    }
-
-
-//}
-
-
+public enum CollectableType { Cash, Gold, Diamond }
 
 public class Collectable : MonoBehaviour
 {
@@ -210,13 +15,21 @@ public class Collectable : MonoBehaviour
     public PlayerController player;
 
     public float value = 100f;
-    public GameObject[] collectables; // 0 cash 1 gold 2 diamond
-    private bool hasTransformed = false;
+    public CollectableType collectableType = CollectableType.Cash;
 
-    void Update()
-    {
-        FollowTarget();
-    }
+    public GameObject goldPrefab;
+    public GameObject diamondPrefab;
+
+    private HashSet<Transform> passedTransformers = new HashSet<Transform>();
+
+    private Transform lastTransformer = null;
+    private float lastTransformTime = -999f;
+    private float transformCooldown = 0.1f; 
+
+    private bool isFrozen= false;
+
+
+    void Update() => FollowTarget();
 
     public void Collect(PlayerController player)
     {
@@ -228,22 +41,40 @@ public class Collectable : MonoBehaviour
         player.Collect(this);
     }
 
+    //public void FollowTarget()
+    //{
+    //    if (!isCollected || followTarget == null) return;
+
+    //    Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
+    //    transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
+    //}
     public void FollowTarget()
     {
-        if (!isCollected || followTarget == null) return;
+        if (!isCollected || followTarget == null || isFrozen) return;
 
         Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
         transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
     }
 
-    public void SetTip(bool value)
-    {
-        isTip = value;
-    }
+
+    public void SetTip(bool value) => isTip = value;
 
     private void OnTriggerEnter(Collider other)
     {
         if (!isCollected) return;
+
+        if (other.CompareTag("Transformer"))
+        {
+            if (Time.time - lastTransformTime < transformCooldown || passedTransformers.Contains(other.transform))
+                return;
+
+            passedTransformers.Add(other.transform);
+            lastTransformer = other.transform;
+            lastTransformTime = Time.time;
+
+            TransformToNext();
+            return;
+        }
 
         if (isTip && other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
         {
@@ -268,53 +99,54 @@ public class Collectable : MonoBehaviour
         {
             player.Deposit(this);
         }
-
-        if (isTip && other.CompareTag("Transformer") && !hasTransformed)
-        {
-            hasTransformed = true;
-            Transform(this);        }
     }
 
-    private void OnTriggerExit(Collider other)
+
+    public void TransformToNext()
     {
-        if (other.CompareTag("Transformer"))
-        {
-            hasTransformed = false;
-        }
-    }
+        if (collectableType == CollectableType.Diamond) return;
 
-    public void Transform(Collectable collectable)
-    {
-        int indexInList = player.collectedList.IndexOf(this);
-        if (indexInList == -1) return;
+        CollectableType newType = (collectableType == CollectableType.Cash) ? CollectableType.Gold : CollectableType.Diamond;
+        GameObject prefab = (newType == CollectableType.Gold) ? goldPrefab : diamondPrefab;
 
-        GameObject newObject = null;
+        //GameObject newObj = Instantiate(prefab, transform.position, Quaternion.identity);
+        GameObject newObj = Instantiate(prefab, transform.position, transform.rotation);
 
-        if (CompareTag("Cash"))
-            newObject = Instantiate(collectables[1], transform.position, transform.rotation);
-        else if (CompareTag("Gold"))
-            newObject = Instantiate(collectables[2], transform.position, transform.rotation);
-        else if (CompareTag("Diamond"))
-            return;
+        Collectable newCollectable = newObj.GetComponent<Collectable>();
 
-        if (newObject == null) return;
-
-        newObject.transform.localScale = transform.localScale;
-        newObject.tag = CompareTag("Cash") ? "Gold" : "Diamond";
-        newObject.layer = LayerMask.NameToLayer("Collected");
-
-        Collectable newCollectable = newObject.GetComponent<Collectable>();
+        newCollectable.lastTransformer = this.lastTransformer;
+        newCollectable.lastTransformTime = Time.time;
         newCollectable.isCollected = true;
-        newCollectable.player = player;
-        newCollectable.followTarget = this.followTarget;
+        newCollectable.player = this.player;
         newCollectable.collectDistance = this.collectDistance;
         newCollectable.SetTip(this.isTip);
 
-        player.collectedList[indexInList] = newCollectable;
+        int index = player.collectedList.IndexOf(this);
+        if (index >= 0)
+        {
+            player.collectedList[index] = newCollectable;
+        }
+
+        if (index == 0)
+        {
+            newCollectable.followTarget = player.transform;
+        }
+        else
+        {
+            newCollectable.followTarget = player.collectedList[index - 1].transform;
+        }
+
+        if (index + 1 < player.collectedList.Count)
+        {
+            player.collectedList[index + 1].followTarget = newCollectable.transform;
+        }
+
+        newCollectable.transform.position = newCollectable.followTarget.position - newCollectable.followTarget.forward * newCollectable.collectDistance;
 
         Destroy(gameObject);
     }
 }
+
 
 
 
