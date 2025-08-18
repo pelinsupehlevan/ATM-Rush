@@ -58,7 +58,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (!isRunning || isRecovering ) { return; }
+        if (!isRunning || isRecovering) { return; }
 
         //forward
         Vector3 forward = transform.forward * speed;
@@ -75,7 +75,7 @@ public class PlayerController : MonoBehaviour
             targetX = transform.position.x;
         }
 
-        
+
         float offset = currentX - transform.position.x;
         Vector3 horizontal = Vector3.right * offset;
 
@@ -100,7 +100,7 @@ public class PlayerController : MonoBehaviour
             deltaX = currentPosition.x - lastPosition.x;
 
             float horizontalMovement = deltaX * sensitivity;
-            
+
             targetX += horizontalMovement;
 
             targetX = Mathf.Clamp(targetX, minX, maxX);
@@ -146,7 +146,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (isRecovering)  return;
+        if (isRecovering) return;
 
         if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle") && !other.CompareTag("ATM") && !other.CompareTag("Transformer"))
         {
@@ -194,36 +194,166 @@ public class PlayerController : MonoBehaviour
 
 
 
-    public void DropCollectable(Collectable collectable)
+    //    //    public void DropCollectable(Collectable collectable)
+    //    //    {
+    //    //        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+    //    //        collectable.isCollected = false;
+    //    //        collectable.followTarget = null;
+    //    //        collectable.SetTip(false);
+    //    //        collectable.gameObject.layer = LayerMask.NameToLayer("Collectable");
+
+    //    //        //buna bakkkkkkkkkkkkkkkkkkkkk cirkin oldu
+    //    //        //Vector3 dropOffset = transform.position + Vector3.forward * Random.Range(6f, 9f) +
+    //    //        //            Vector3.right * Random.Range(-2f, 2f);
+
+    //    //        //float clampedX = Mathf.Clamp(dropOffset.x, minX, maxX);
+    //    //        //dropOffset = new Vector3(clampedX, dropOffset.y, dropOffset.z);
+
+    //    //        Vector3 dropOffset = new Vector3(Random.Range(minX, maxX),
+    //    //                                         transform.position.y,
+    //    //                                         transform.position.z + Random.Range(8f, 10f)
+    //    //);
+
+    //    //        collectable.transform.position = dropOffset;
+
+    //    //        collectedList.Remove(collectable);
+
+    //    //        if (collectedList.Count > 0)
+    //    //        {
+    //    //            collectedList[collectedList.Count - 1].SetTip(true);
+    //    //        }
+    //    //    }
+
+    //    public void DropCollectable(Collectable collectable)
+    //    {
+    //        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+    //        int index = collectedList.IndexOf(collectable);
+
+    //        // Get all collectables from this index onward
+    //        List<Collectable> toDrop = collectedList.GetRange(index, collectedList.Count - index);
+
+    //        foreach (Collectable col in toDrop)
+    //        {
+    //            col.isCollected = false;
+    //            col.followTarget = null;
+    //            col.SetTip(false);
+    //            col.gameObject.layer = LayerMask.NameToLayer("Collectable");
+
+    //            Vector3 dropOffset = new Vector3(Random.Range(minX, maxX),
+    //                                             transform.position.y,
+    //                                             transform.position.z + Random.Range(8f, 10f));
+    //            col.transform.position = dropOffset;
+    //        }
+
+    //        // Remove them from the collected list
+    //        collectedList.RemoveRange(index, collectedList.Count - index);
+
+    //        // Update the new tip
+    //        if (collectedList.Count > 0)
+    //        {
+    //            collectedList[collectedList.Count - 1].SetTip(true);
+    //        }
+    //    }
+
+    //    //public void DestroyCollectable(Collectable collectable)
+    //    //{
+    //    //    if (collectable == null || !collectedList.Contains(collectable)) return;
+
+    //    //    collectable.SetTip(false);
+    //    //    collectedList.Remove(collectable);
+    //    //    Destroy(collectable.gameObject);
+
+    //    //    if (collectedList.Count > 0)
+    //    //    {
+    //    //        collectedList[collectedList.Count - 1].SetTip(true);
+    //    //    }
+    //    //}
+
+    //    public void DestroyCollectable(Collectable collectable)
+    //    {
+    //        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+    //        int index = collectedList.IndexOf(collectable);
+
+    //        // Get all collectables from this index onward
+    //        List<Collectable> toDestroy = collectedList.GetRange(index, collectedList.Count - index);
+
+    //        foreach (Collectable col in toDestroy)
+    //        {
+    //            col.SetTip(false);
+    //            Destroy(col.gameObject);
+    //        }
+
+    //        // Remove them from the collected list
+    //        collectedList.RemoveRange(index, collectedList.Count - index);
+
+    //        // Update the new tip
+    //        if (collectedList.Count > 0)
+    //        {
+    //            collectedList[collectedList.Count - 1].SetTip(true);
+    //        }
+    //    }
+
+    //    public void Deposit(Collectable collectable)
+    //    {
+    //        if (collectable == null || !collectedList.Contains(collectable)) return;
+
+    //        collectable.SetTip(false);
+    //        collectedList.Remove(collectable);
+    //        Destroy(collectable.gameObject);
+
+    //        if (collectedList.Count > 0)
+    //        {
+    //            collectedList[collectedList.Count - 1].SetTip(true);
+    //        }
+    //        moneyAmount += collectable.value;
+    //        Debug.Log("Current Money: " + moneyAmount);
+    //    }
+
+    public void DropFromCollectable(Collectable collectable)
     {
         if (collectable == null || !collectedList.Contains(collectable)) return;
-        
-        collectable.isCollected = false;
-        collectable.followTarget = null;
-        collectable.SetTip(false);
-        collectable.gameObject.layer = LayerMask.NameToLayer("Collectable");
 
-        //buna bakkkkkkkkkkkkkkkkkkkkk cirkin oldu
-        Vector3 dropOffset = transform.position + Vector3.forward * Random.Range(6f, 9f) +
-                    Vector3.right * Random.Range(-2f, 2f);
-        collectable.transform.position = dropOffset;
+        int index = collectedList.IndexOf(collectable);
+        List<Collectable> toDrop = collectedList.GetRange(index, collectedList.Count - index);
 
-        collectedList.Remove(collectable);
+        foreach (Collectable col in toDrop)
+        {
+            col.isCollected = false;
+            col.followTarget = null;
+            col.SetTip(false);
+            col.gameObject.layer = LayerMask.NameToLayer("Collectable");
+
+            Vector3 dropOffset = new Vector3(Random.Range(minX, maxX),
+                                             transform.position.y,
+                                             transform.position.z + Random.Range(8f, 10f));
+            col.transform.position = dropOffset;
+        }
+
+        collectedList.RemoveRange(index, collectedList.Count - index);
 
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(true);
         }
-        
     }
 
-    public void DestroyCollectable(Collectable collectable)
+    public void DestroyFromCollectable(Collectable collectable)
     {
         if (collectable == null || !collectedList.Contains(collectable)) return;
 
-        collectable.SetTip(false);
-        collectedList.Remove(collectable);
-        Destroy(collectable.gameObject);
+        int index = collectedList.IndexOf(collectable);
+        List<Collectable> toDestroy = collectedList.GetRange(index, collectedList.Count - index);
+
+        foreach (Collectable col in toDestroy)
+        {
+            col.SetTip(false);
+            Destroy(col.gameObject);
+        }
+
+        collectedList.RemoveRange(index, collectedList.Count - index);
 
         if (collectedList.Count > 0)
         {
@@ -231,19 +361,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void Deposit(Collectable collectable)
+    public void DepositFromCollectable(Collectable collectable)
     {
         if (collectable == null || !collectedList.Contains(collectable)) return;
 
-        collectable.SetTip(false);
-        collectedList.Remove(collectable);
-        Destroy(collectable.gameObject);
+        int index = collectedList.IndexOf(collectable);
+        List<Collectable> toDeposit = collectedList.GetRange(index, collectedList.Count - index);
+
+        foreach (Collectable col in toDeposit)
+        {
+            col.SetTip(false);
+            moneyAmount += col.value;
+            Destroy(col.gameObject);
+        }
+
+        collectedList.RemoveRange(index, collectedList.Count - index);
 
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(true);
         }
-        moneyAmount += collectable.value;
+
         Debug.Log("Current Money: " + moneyAmount);
     }
 
