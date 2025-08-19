@@ -133,7 +133,6 @@ public class PlayerController : MonoBehaviour
     {
         if (isRecovering) return;
 
-        // Handle obstacles (but not ATM and Transformer gates)
         if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle") &&
             !other.CompareTag("ATM") && !other.CompareTag("Transformer"))
         {
@@ -153,12 +152,6 @@ public class PlayerController : MonoBehaviour
 
     public void Collect(Collectable newCollectable)
     {
-        // Remove tip from previous last collectable
-        if (collectedList.Count > 0)
-        {
-            collectedList[collectedList.Count - 1].SetTip(false);
-        }
-
         collectedList.Add(newCollectable);
 
         // Set follow target and distance
@@ -175,7 +168,6 @@ public class PlayerController : MonoBehaviour
         }
 
         newCollectable.followTarget = target;
-        newCollectable.SetTip(true); // New collectable becomes the tip
     }
 
     public void RemoveCollectableFromChain(Collectable collectable)
@@ -193,12 +185,6 @@ public class PlayerController : MonoBehaviour
 
         // Remove from list
         collectedList.RemoveAt(index);
-
-        // Update tip indicator
-        if (collectedList.Count > 0)
-        {
-            collectedList[collectedList.Count - 1].SetTip(true);
-        }
     }
 
     public void DropFromCollectable(Collectable collectable)
@@ -212,7 +198,6 @@ public class PlayerController : MonoBehaviour
         {
             col.isCollected = false;
             col.followTarget = null;
-            col.SetTip(false);
             col.gameObject.layer = LayerMask.NameToLayer("Collectable");
 
             Vector3 dropOffset = new Vector3(Random.Range(minX, maxX),
@@ -222,12 +207,6 @@ public class PlayerController : MonoBehaviour
         }
 
         collectedList.RemoveRange(index, collectedList.Count - index);
-
-        // Update tip
-        if (collectedList.Count > 0)
-        {
-            collectedList[collectedList.Count - 1].SetTip(true);
-        }
     }
 
     public void DestroyFromCollectable(Collectable collectable)
@@ -239,17 +218,10 @@ public class PlayerController : MonoBehaviour
 
         foreach (Collectable col in toDestroy)
         {
-            col.SetTip(false);
             Destroy(col.gameObject);
         }
 
         collectedList.RemoveRange(index, collectedList.Count - index);
-
-        // Update tip
-        if (collectedList.Count > 0)
-        {
-            collectedList[collectedList.Count - 1].SetTip(true);
-        }
     }
 
     public void DepositFromCollectable(Collectable collectable)
@@ -261,18 +233,11 @@ public class PlayerController : MonoBehaviour
 
         foreach (Collectable col in toDeposit)
         {
-            col.SetTip(false);
             moneyAmount += col.value;
             Destroy(col.gameObject);
         }
 
         collectedList.RemoveRange(index, collectedList.Count - index);
-
-        // Update tip
-        if (collectedList.Count > 0)
-        {
-            collectedList[collectedList.Count - 1].SetTip(true);
-        }
 
         Debug.Log("Current Money: " + moneyAmount);
     }

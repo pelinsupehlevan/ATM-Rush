@@ -8,16 +8,18 @@ public class TransformerGate : MonoBehaviour
     public GameObject goldPrefab;
     public GameObject diamondPrefab;
 
+    // Track which collectables are currently being transformed to avoid duplicates
     private HashSet<Collectable> transformedCollectables = new HashSet<Collectable>();
 
     public void TransformIndividualCollectable(Collectable collectable)
     {
+        // Already transformed? Skip
         if (transformedCollectables.Contains(collectable)) return;
 
         GameObject newPrefab = null;
         CollectableType newType = collectable.type;
 
-        // Determine what to transform to
+        // Determine the next type
         if (collectable.type == CollectableType.Cash && goldPrefab != null)
         {
             newPrefab = goldPrefab;
@@ -28,65 +30,72 @@ public class TransformerGate : MonoBehaviour
             newPrefab = diamondPrefab;
             newType = CollectableType.Diamond;
         }
-
-        if (newPrefab != null)
+        else
         {
-            StartCoroutine(ReplaceCollectable(collectable, newPrefab, newType));
+            // Diamond or no prefab available, nothing to transform
+            return;
         }
+
+        // Mark as transforming
+        transformedCollectables.Add(collectable);
+
+        // Start coroutine to replace collectable
+        StartCoroutine(ReplaceCollectable(collectable, newPrefab, newType));
     }
 
     private IEnumerator ReplaceCollectable(Collectable oldCollectable, GameObject newPrefab, CollectableType newType)
     {
-        // Find the player
         PlayerController player = oldCollectable.FindPlayerInChain();
         if (player == null) yield break;
 
-        // Create new collectable
-        GameObject newObj = Instantiate(newPrefab, oldCollectable.transform.position, oldCollectable.transform.rotation);
+        // Save old position and rotation
+        Vector3 oldPosition = oldCollectable.transform.position;
+        Quaternion oldRotation = oldCollectable.transform.rotation;
+
+        // Instantiate new collectable at same position and rotation
+        GameObject newObj = Instantiate(newPrefab, oldPosition, oldRotation);
         Collectable newCollectable = newObj.GetComponent<Collectable>();
 
         if (newCollectable != null)
         {
-            // Copy states
+            // Preserve chain properties
             newCollectable.isCollected = true;
             newCollectable.followTarget = oldCollectable.followTarget;
             newCollectable.collectDistance = oldCollectable.collectDistance;
             newCollectable.type = newType;
             newCollectable.gameObject.layer = LayerMask.NameToLayer("Default");
 
-            // Handle tip indicator
-            bool wasTip = oldCollectable.tipIndicator != null && oldCollectable.tipIndicator.activeInHierarchy;
-            newCollectable.SetTip(wasTip);
-
-            // Replace in player's list
+            // Replace in player's collected list
             int index = player.collectedList.IndexOf(oldCollectable);
             if (index >= 0)
             {
                 player.collectedList[index] = newCollectable;
 
-                // Update follow targets for collectables behind this one
-                for (int j = index + 1; j < player.collectedList.Count; j++)
+                // Update follow targets for collectables following the old one
+                for (int i = 0; i < player.collectedList.Count; i++)
                 {
-                    if (j == index + 1)
+                    if (player.collectedList[i].followTarget == oldCollectable.transform)
                     {
-                        player.collectedList[j].followTarget = newCollectable.transform;
+                        player.collectedList[i].followTarget = newCollectable.transform;
                     }
                 }
             }
-
-            transformedCollectables.Add(newCollectable);
         }
 
         // Destroy old collectable
         Destroy(oldCollectable.gameObject);
 
         yield return null;
+
+        // Remove from transformed set
+        transformedCollectables.Remove(oldCollectable);
     }
 
     private void OnTriggerExit(Collider other)
     {
+        // Just in case, remove from the set
         Collectable collectable = other.GetComponent<Collectable>();
-        if (collectable != null && transformedCollectables.Contains(collectable))
+        if (collectable != null)
         {
             transformedCollectables.Remove(collectable);
         }

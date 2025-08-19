@@ -21,10 +21,8 @@ public class Collectable : MonoBehaviour
     public float followSpeed = 8f;
     public float rotationSpeed = 90f;
 
-    [Header("Visual Elements")]
-    public GameObject tipIndicator;
-
     private Vector3 followOffset;
+    public bool transformLock = false;
 
     void Start()
     {
@@ -51,13 +49,33 @@ public class Collectable : MonoBehaviour
         }
     }
 
+    //private void FollowTarget()
+    //{
+    //    //Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
+    //    //targetPosition.y = transform.position.y;
+
+    //    //transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
+
+    //    Vector3 targetPosition = followTarget.position + followTarget.forward * collectDistance;
+    //    targetPosition.y = followTarget.position.y; // Keep same height as target
+    //    transform.position = targetPosition;
+
+    //    // Optional: match rotation exactly
+    //}
+
     private void FollowTarget()
     {
-        Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
-        targetPosition.y = transform.position.y;
+        if (followTarget == null) return;
 
-        transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
+        // Snap directly in front along world Z axis, ignoring X/Y rotation
+        Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
+        targetPosition.y = followTarget.position.y; // Keep same height as target
+        transform.position = targetPosition;
+
+        // Match rotation exactly (optional)
+        transform.rotation = followTarget.rotation;
     }
+
 
     public void Collect(PlayerController player)
     {
@@ -68,36 +86,25 @@ public class Collectable : MonoBehaviour
         player.Collect(this);
     }
 
-    public void SetTip(bool isTip)
-    {
-        if (tipIndicator != null)
-        {
-            tipIndicator.SetActive(isTip);
-        }
-    }
-
     private void OnTriggerEnter(Collider other)
     {
-        // Only the tip collectable should collect new items
-        if (isCollected && IsTip())
+        if (!isCollected) return;
+
+        PlayerController player = FindPlayerInChain();
+        if (player == null) return;
+
+        // --- Collect new money if this is the tip ---
+        if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
         {
-            if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
+            Collectable newCollectable = other.GetComponent<Collectable>();
+            if (newCollectable != null && !newCollectable.isCollected)
             {
-                Collectable newCollectable = other.GetComponent<Collectable>();
-                if (newCollectable != null && !newCollectable.isCollected)
-                {
-                    // Find the player through the chain
-                    PlayerController player = FindPlayerInChain();
-                    if (player != null)
-                    {
-                        newCollectable.Collect(player);
-                    }
-                }
+                newCollectable.Collect(player);
             }
         }
 
-        // Handle individual transformation
-        if (isCollected && other.CompareTag("Transformer"))
+        // --- Handle Transformer gate ---
+        if (other.CompareTag("Transformer"))
         {
             TransformerGate gate = other.GetComponent<TransformerGate>();
             if (gate != null)
@@ -106,8 +113,8 @@ public class Collectable : MonoBehaviour
             }
         }
 
-        // Handle individual deposit
-        if (isCollected && other.CompareTag("ATM"))
+        // --- Handle ATM gate ---
+        if (other.CompareTag("ATM"))
         {
             ATMGate atm = other.GetComponent<ATMGate>();
             if (atm != null)
@@ -115,11 +122,35 @@ public class Collectable : MonoBehaviour
                 atm.DepositIndividualCollectable(this);
             }
         }
+
+        // --- Handle obstacles ---
+        switch (other.tag)
+        {
+            case "Drop":
+                player.DropFromCollectable(this);
+                break;
+
+            case "Destroy":
+                player.DestroyFromCollectable(this);
+                break;
+
+            case "Deposit":
+                player.DepositFromCollectable(this);
+                break;
+        }
     }
 
-    private bool IsTip()
+
+
+
+
+
+    private void OnTriggerExit(Collider other)
     {
-        return tipIndicator != null && tipIndicator.activeInHierarchy;
+        if (other.CompareTag("Transformer"))
+        {
+            transformLock = false; // reset lock when leaving transformer
+        }
     }
 
     public PlayerController FindPlayerInChain()
@@ -128,20 +159,14 @@ public class Collectable : MonoBehaviour
         while (current != null)
         {
             PlayerController player = current.GetComponent<PlayerController>();
-            if (player != null)
-            {
-                return player;
-            }
+            if (player != null) return player;
 
             Collectable collectable = current.GetComponent<Collectable>();
             if (collectable != null)
             {
                 current = collectable.followTarget;
             }
-            else
-            {
-                break;
-            }
+            else break;
         }
         return null;
     }

@@ -14,7 +14,6 @@ public class ConveyorBelt : MonoBehaviour
     public float countDelay = 0.5f;
 
     private bool isActive = false;
-    private Queue<Collectable> collectablesOnBelt = new Queue<Collectable>();
     private UIManager uiManager;
     private LevelManager levelManager;
 
@@ -29,7 +28,7 @@ public class ConveyorBelt : MonoBehaviour
         PlayerController player = other.GetComponent<PlayerController>();
         if (player != null && !isActive && player.collectedList.Count > 0)
         {
-            startPoint = player.transform; 
+            startPoint = player.transform;
             StartCoroutine(ProcessCollectables(player));
         }
     }
@@ -38,8 +37,10 @@ public class ConveyorBelt : MonoBehaviour
     {
         isActive = true;
 
+        // Stop player movement
         player.enabled = false;
 
+        // Get all collectables and reverse order (process from tip backwards)
         List<Collectable> collectables = new List<Collectable>(player.collectedList);
         collectables.Reverse();
 
@@ -48,28 +49,35 @@ public class ConveyorBelt : MonoBehaviour
 
         foreach (Collectable collectable in collectables)
         {
+            // Move collectable to conveyor start
             yield return StartCoroutine(MoveToConveyor(collectable));
 
+            // Move along conveyor
             yield return StartCoroutine(MoveAlongConveyor(collectable));
 
+            // Add to totals
             totalMoney += collectable.value;
             totalCount++;
 
+            // Update UI
             if (uiManager != null)
             {
                 uiManager.UpdateMoneyCount(totalMoney);
                 uiManager.UpdateCollectableCount(totalCount);
             }
 
+            // Destroy the collectable
             Destroy(collectable.gameObject);
 
+            // Wait before processing next
             yield return new WaitForSeconds(countDelay);
         }
 
+        // Clear player's list and add money
         player.collectedList.Clear();
-
         player.moneyAmount += totalMoney;
 
+        // Complete the level
         if (levelManager != null)
         {
             levelManager.CompleteLevel(totalMoney, totalCount);
@@ -84,7 +92,10 @@ public class ConveyorBelt : MonoBehaviour
     {
         Vector3 startPos = collectable.transform.position;
         Vector3 targetPos = startPoint.position;
-        collectable.transform.rotation *= Quaternion.Euler(0, 90, 0); 
+
+        // Rotate the collectable 90 degrees
+        Quaternion startRot = collectable.transform.rotation;
+        Quaternion targetRot = startRot * Quaternion.Euler(0, 90, 0);
 
         float moveTime = 1f;
         float elapsed = 0f;
@@ -95,10 +106,12 @@ public class ConveyorBelt : MonoBehaviour
             float t = elapsed / moveTime;
 
             collectable.transform.position = Vector3.Lerp(startPos, targetPos, t);
+            collectable.transform.rotation = Quaternion.Lerp(startRot, targetRot, t);
             yield return null;
         }
 
         collectable.transform.position = targetPos;
+        collectable.transform.rotation = targetRot;
     }
 
     private IEnumerator MoveAlongConveyor(Collectable collectable)
