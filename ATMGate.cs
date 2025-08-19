@@ -4,61 +4,43 @@ using UnityEngine;
 
 public class ATMGate : MonoBehaviour
 {
-    [Header("ATM Settings")]
-    public float depositDelay = 0.1f;
-
     private HashSet<Collectable> depositedCollectables = new HashSet<Collectable>();
-    private bool isProcessing = false;
 
-    private void OnTriggerEnter(Collider other)
+    public void DepositIndividualCollectable(Collectable collectable)
     {
-        if (isProcessing) return;
+        if (depositedCollectables.Contains(collectable)) return;
 
-        PlayerController player = other.GetComponent<PlayerController>();
-        if (player != null && player.collectedList.Count > 0)
+        depositedCollectables.Add(collectable);
+
+        // Find the player
+        PlayerController player = collectable.FindPlayerInChain();
+        if (player != null)
         {
-            StartCoroutine(DepositCollectables(player));
+            StartCoroutine(DepositAndDestroy(collectable, player));
         }
+    }
+
+    private IEnumerator DepositAndDestroy(Collectable collectable, PlayerController player)
+    {
+        // Add money to player
+        player.moneyAmount += collectable.value;
+        Debug.Log($"Deposited ${collectable.value:F0}. Total Money: ${player.moneyAmount:F0}");
+
+        // Remove from player's list and update chain
+        player.RemoveCollectableFromChain(collectable);
+
+        // Destroy the collectable (it gets "eaten" by the ATM)
+        Destroy(collectable.gameObject);
+
+        yield return null;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        PlayerController player = other.GetComponent<PlayerController>();
-        if (player != null)
+        Collectable collectable = other.GetComponent<Collectable>();
+        if (collectable != null && depositedCollectables.Contains(collectable))
         {
-            depositedCollectables.Clear();
-            isProcessing = false;
+            depositedCollectables.Remove(collectable);
         }
-    }
-
-    private IEnumerator DepositCollectables(PlayerController player)
-    {
-        isProcessing = true;
-
-        List<Collectable> collectablesToDeposit = new List<Collectable>(player.collectedList);
-
-        float totalDeposited = 0f;
-        int countDeposited = 0;
-
-        foreach (Collectable collectable in collectablesToDeposit)
-        {
-            if (depositedCollectables.Contains(collectable)) continue;
-
-            totalDeposited += collectable.value;
-            countDeposited++;
-            depositedCollectables.Add(collectable);
-
-            player.DepositFromCollectable(collectable);
-
-            yield return new WaitForSeconds(depositDelay);
-        }
-
-        if (countDeposited > 0)
-        {
-            Debug.Log($"Deposited {countDeposited} items worth ${totalDeposited:F0}");
-        }
-
-        yield return new WaitForSeconds(0.5f);
-        isProcessing = false;
     }
 }

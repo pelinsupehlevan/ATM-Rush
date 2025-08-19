@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     public List<Collectable> collectedList = new List<Collectable>();
     public float moneyAmount = 0;
 
+    // Private variables for movement
     private Vector2 startPosition;
     private Vector2 lastPosition;
     private Vector2 currentPosition;
@@ -27,6 +28,7 @@ public class PlayerController : MonoBehaviour
     private float targetX;
     private float deltaX;
 
+    // State variables
     private bool isRunning = false;
     private bool isSliding = false;
     private bool isRecovering = false;
@@ -47,8 +49,10 @@ public class PlayerController : MonoBehaviour
     {
         if (!isRunning || isRecovering) { return; }
 
+        // Forward movement
         Vector3 forward = transform.forward * speed;
 
+        // Horizontal sliding
         if (isSliding)
         {
             currentX = Mathf.Lerp(currentX, targetX, smoothingFactor);
@@ -129,12 +133,14 @@ public class PlayerController : MonoBehaviour
     {
         if (isRecovering) return;
 
+        // Handle obstacles (but not ATM and Transformer gates)
         if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle") &&
             !other.CompareTag("ATM") && !other.CompareTag("Transformer"))
         {
             StartCoroutine(Recover());
         }
 
+        // Player can also collect directly (fallback)
         if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
         {
             Collectable collectable = other.GetComponent<Collectable>();
@@ -147,6 +153,7 @@ public class PlayerController : MonoBehaviour
 
     public void Collect(Collectable newCollectable)
     {
+        // Remove tip from previous last collectable
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(false);
@@ -154,6 +161,7 @@ public class PlayerController : MonoBehaviour
 
         collectedList.Add(newCollectable);
 
+        // Set follow target and distance
         Transform target;
         if (collectedList.Count == 1)
         {
@@ -167,7 +175,30 @@ public class PlayerController : MonoBehaviour
         }
 
         newCollectable.followTarget = target;
-        newCollectable.SetTip(true); 
+        newCollectable.SetTip(true); // New collectable becomes the tip
+    }
+
+    public void RemoveCollectableFromChain(Collectable collectable)
+    {
+        if (!collectedList.Contains(collectable)) return;
+
+        int index = collectedList.IndexOf(collectable);
+
+        // If removing from the middle or start of chain, update follow targets
+        if (index < collectedList.Count - 1)
+        {
+            Collectable nextCollectable = collectedList[index + 1];
+            nextCollectable.followTarget = collectable.followTarget;
+        }
+
+        // Remove from list
+        collectedList.RemoveAt(index);
+
+        // Update tip indicator
+        if (collectedList.Count > 0)
+        {
+            collectedList[collectedList.Count - 1].SetTip(true);
+        }
     }
 
     public void DropFromCollectable(Collectable collectable)
@@ -192,6 +223,7 @@ public class PlayerController : MonoBehaviour
 
         collectedList.RemoveRange(index, collectedList.Count - index);
 
+        // Update tip
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(true);
@@ -213,6 +245,7 @@ public class PlayerController : MonoBehaviour
 
         collectedList.RemoveRange(index, collectedList.Count - index);
 
+        // Update tip
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(true);
@@ -235,6 +268,7 @@ public class PlayerController : MonoBehaviour
 
         collectedList.RemoveRange(index, collectedList.Count - index);
 
+        // Update tip
         if (collectedList.Count > 0)
         {
             collectedList[collectedList.Count - 1].SetTip(true);
