@@ -103,15 +103,32 @@ public class Collectable : MonoBehaviour
             }
         }
 
+        //// --- Handle Transformer gate ---
+        //if (other.CompareTag("Transformer"))
+        //{
+        //    TransformerGate gate = other.GetComponent<TransformerGate>();
+        //    if (gate != null)
+        //    {
+        //        gate.TransformIndividualCollectable(this);
+        //    }
+        //}
+
         // --- Handle Transformer gate ---
         if (other.CompareTag("Transformer"))
         {
-            TransformerGate gate = other.GetComponent<TransformerGate>();
+            var gate = other.GetComponent<TransformerGate>();
             if (gate != null)
             {
+                // DEBUG
+                Debug.Log($"[Collectable:{name} id={GetInstanceID()} type={type} t={Time.time:F3}s] Calling Transform on gate {gate.name}.");
                 gate.TransformIndividualCollectable(this);
             }
+            else
+            {
+                Debug.LogWarning($"[Collectable:{name}] Transformer tag found but no TransformerGate component on {other.name}.");
+            }
         }
+
 
         // --- Handle ATM gate ---
         if (other.CompareTag("ATM"))
