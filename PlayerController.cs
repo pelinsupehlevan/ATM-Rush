@@ -1,3 +1,6 @@
+
+
+// Updated PlayerController.cs - Clean up the Collect method
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -129,58 +132,62 @@ public class PlayerController : MonoBehaviour
     {
         if (isRecovering) return;
 
+        Debug.Log($"[PLAYER] OnTriggerEnter with {other.gameObject.name}, Layer: {LayerMask.LayerToName(other.gameObject.layer)}, Tag: {other.tag}");
+
         if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle") &&
             !other.CompareTag("ATM") && !other.CompareTag("Transformer"))
         {
             StartCoroutine(Recover());
         }
 
-        if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
+        // ONLY collect if chain is empty
+        if (other.gameObject.layer == LayerMask.NameToLayer("Collectable") && collectedList.Count == 0)
         {
             Collectable collectable = other.GetComponent<Collectable>();
             if (collectable != null && !collectable.isCollected)
             {
+                Debug.Log($"[PLAYER] Player collecting {collectable.name} (empty chain)");
                 collectable.Collect(this);
             }
         }
     }
+    public void Collect(Collectable newCollectable)
+    {
+        if (collectedList.Contains(newCollectable))
+        {
+            Debug.LogWarning($"[PLAYER] Trying to collect {newCollectable.name} but it's already in the list!");
+            return;
+        }
 
+        Debug.Log($"[PLAYER] Adding {newCollectable.name} to collection. List size before: {collectedList.Count}");
 
-    //public void Collect(Collectable newCollectable)
-    //{
-    //    if (collectedList.Contains(newCollectable))
-    //    {
-    //        Debug.LogWarning($"[Player] Trying to collect {newCollectable.name} but it's already in the list!");
-    //        return;
-    //    }
+        collectedList.Add(newCollectable);
 
-    //    Debug.Log($"[Player] Collecting {newCollectable.name}. List size before: {collectedList.Count}");
+        // Set follow target
+        Transform target;
+        if (collectedList.Count == 1)
+        {
+            target = this.transform;
+            newCollectable.collectDistance = 2f;
+            Debug.Log($"[PLAYER] {newCollectable.name} is first in chain, following player");
+        }
+        else
+        {
+            target = collectedList[collectedList.Count - 2].transform;
+            newCollectable.collectDistance = 1f;
+            Debug.Log($"[PLAYER] {newCollectable.name} following {collectedList[collectedList.Count - 2].name}");
+        }
 
-    //    collectedList.Add(newCollectable);
+        newCollectable.followTarget = target;
 
-    //    Transform target;
-    //    if (collectedList.Count == 1)
-    //    {
-    //        target = this.transform;
-    //        newCollectable.collectDistance = 2f;
-    //        Debug.Log($"[Player] {newCollectable.name} is first in chain, following player");
-    //    }
-    //    else
-    //    {
-    //        target = collectedList[collectedList.Count - 2].transform;
-    //        newCollectable.collectDistance = 1f;
-    //        Debug.Log($"[Player] {newCollectable.name} following {collectedList[collectedList.Count - 2].name}");
-    //    }
+        Debug.Log($"[PLAYER] Collected {newCollectable.name} ({newCollectable.type}). Total collected: {collectedList.Count}");
 
-    //    newCollectable.followTarget = target;
-
-    //    Debug.Log($"[Player] List size after: {collectedList.Count}");
-
-    //    for (int i = 0; i < collectedList.Count; i++)
-    //    {
-    //        Debug.Log($"[Player] Index {i}: {collectedList[i].name} (ID: {collectedList[i].GetInstanceID()})");
-    //    }
-    //}
+        // Debug the entire chain
+        for (int i = 0; i < collectedList.Count; i++)
+        {
+            Debug.Log($"[PLAYER] Chain[{i}]: {collectedList[i].name} (ID: {collectedList[i].GetInstanceID()})");
+        }
+    }
 
     public void RemoveCollectableFromChain(Collectable collectable)
     {
@@ -188,6 +195,7 @@ public class PlayerController : MonoBehaviour
 
         int index = collectedList.IndexOf(collectable);
 
+        // Update following chain
         if (index < collectedList.Count - 1)
         {
             Collectable nextCollectable = collectedList[index + 1];
@@ -250,41 +258,6 @@ public class PlayerController : MonoBehaviour
         collectedList.RemoveRange(index, collectedList.Count - index);
 
         Debug.Log("Current Money: " + moneyAmount);
-    }
-
-    // In your PlayerController script, add these methods:
-
-    public void Collect(Collectable collectable)
-    {
-        if (collectedList.Count == 0)
-        {
-            // First collectable follows player directly
-            collectable.Collect(this, transform);
-        }
-        else
-        {
-            // Subsequent collectables follow the last collected item
-            Collectable lastCollectable = collectedList[collectedList.Count - 1];
-            collectable.Collect(this, lastCollectable.transform);
-        }
-
-        collectedList.Add(collectable);
-    }
-
-    // Add methods to handle dropping, destroying, and depositing collectables
-    public void DropCollectable(Collectable collectable)
-    {
-        if (collectedList.Contains(collectable))
-        {
-            collectedList.Remove(collectable);
-            // Reset the collectable
-            collectable.isCollected = false;
-            collectable.followTarget = null;
-            collectable.gameObject.layer = LayerMask.NameToLayer("Collectable");
-
-            // Update the following targets for remaining collectables
-            UpdateCollectableChain();
-        }
     }
 
     private void UpdateCollectableChain()

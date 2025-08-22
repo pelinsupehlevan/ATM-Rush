@@ -64,14 +64,14 @@ public class LevelManager : MonoBehaviour
     {
         ClearLevelContent();
 
-        if (levelPrefabs != null && levelPrefabs.Length > 0)
-        {
-            int levelIndex = Mathf.Min(currentLevel - 1, levelPrefabs.Length - 1);
-            if (levelPrefabs[levelIndex] != null)
-            {
-                Instantiate(levelPrefabs[levelIndex]);
-            }
-        }
+        //if (levelPrefabs != null && levelPrefabs.Length > 0)
+        //{
+        //    int levelIndex = Mathf.Min(currentLevel - 1, levelPrefabs.Length - 1);
+        //    if (levelPrefabs[levelIndex] != null)
+        //    {
+        //        Instantiate(levelPrefabs[levelIndex]);
+        //    }
+        //}
     }
 
     private void ClearLevelContent()
