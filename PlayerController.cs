@@ -20,7 +20,6 @@ public class PlayerController : MonoBehaviour
     public List<Collectable> collectedList = new List<Collectable>();
     public float moneyAmount = 0;
 
-    // Private variables for movement
     private Vector2 startPosition;
     private Vector2 lastPosition;
     private Vector2 currentPosition;
@@ -28,7 +27,6 @@ public class PlayerController : MonoBehaviour
     private float targetX;
     private float deltaX;
 
-    // State variables
     private bool isRunning = false;
     private bool isSliding = false;
     private bool isRecovering = false;
@@ -49,10 +47,8 @@ public class PlayerController : MonoBehaviour
     {
         if (!isRunning || isRecovering) { return; }
 
-        // Forward movement
         Vector3 forward = transform.forward * speed;
 
-        // Horizontal sliding
         if (isSliding)
         {
             currentX = Mathf.Lerp(currentX, targetX, smoothingFactor);
@@ -139,7 +135,6 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(Recover());
         }
 
-        // Player can also collect directly (fallback)
         if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
         {
             Collectable collectable = other.GetComponent<Collectable>();
@@ -150,25 +145,42 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void Collect(Collectable newCollectable)
-    {
-        collectedList.Add(newCollectable);
 
-        // Set follow target and distance
-        Transform target;
-        if (collectedList.Count == 1)
-        {
-            target = this.transform;
-            newCollectable.collectDistance = 2f;
-        }
-        else
-        {
-            target = collectedList[collectedList.Count - 2].transform;
-            newCollectable.collectDistance = 1f;
-        }
+    //public void Collect(Collectable newCollectable)
+    //{
+    //    if (collectedList.Contains(newCollectable))
+    //    {
+    //        Debug.LogWarning($"[Player] Trying to collect {newCollectable.name} but it's already in the list!");
+    //        return;
+    //    }
 
-        newCollectable.followTarget = target;
-    }
+    //    Debug.Log($"[Player] Collecting {newCollectable.name}. List size before: {collectedList.Count}");
+
+    //    collectedList.Add(newCollectable);
+
+    //    Transform target;
+    //    if (collectedList.Count == 1)
+    //    {
+    //        target = this.transform;
+    //        newCollectable.collectDistance = 2f;
+    //        Debug.Log($"[Player] {newCollectable.name} is first in chain, following player");
+    //    }
+    //    else
+    //    {
+    //        target = collectedList[collectedList.Count - 2].transform;
+    //        newCollectable.collectDistance = 1f;
+    //        Debug.Log($"[Player] {newCollectable.name} following {collectedList[collectedList.Count - 2].name}");
+    //    }
+
+    //    newCollectable.followTarget = target;
+
+    //    Debug.Log($"[Player] List size after: {collectedList.Count}");
+
+    //    for (int i = 0; i < collectedList.Count; i++)
+    //    {
+    //        Debug.Log($"[Player] Index {i}: {collectedList[i].name} (ID: {collectedList[i].GetInstanceID()})");
+    //    }
+    //}
 
     public void RemoveCollectableFromChain(Collectable collectable)
     {
@@ -176,14 +188,12 @@ public class PlayerController : MonoBehaviour
 
         int index = collectedList.IndexOf(collectable);
 
-        // If removing from the middle or start of chain, update follow targets
         if (index < collectedList.Count - 1)
         {
             Collectable nextCollectable = collectedList[index + 1];
             nextCollectable.followTarget = collectable.followTarget;
         }
 
-        // Remove from list
         collectedList.RemoveAt(index);
     }
 
@@ -240,5 +250,54 @@ public class PlayerController : MonoBehaviour
         collectedList.RemoveRange(index, collectedList.Count - index);
 
         Debug.Log("Current Money: " + moneyAmount);
+    }
+
+    // In your PlayerController script, add these methods:
+
+    public void Collect(Collectable collectable)
+    {
+        if (collectedList.Count == 0)
+        {
+            // First collectable follows player directly
+            collectable.Collect(this, transform);
+        }
+        else
+        {
+            // Subsequent collectables follow the last collected item
+            Collectable lastCollectable = collectedList[collectedList.Count - 1];
+            collectable.Collect(this, lastCollectable.transform);
+        }
+
+        collectedList.Add(collectable);
+    }
+
+    // Add methods to handle dropping, destroying, and depositing collectables
+    public void DropCollectable(Collectable collectable)
+    {
+        if (collectedList.Contains(collectable))
+        {
+            collectedList.Remove(collectable);
+            // Reset the collectable
+            collectable.isCollected = false;
+            collectable.followTarget = null;
+            collectable.gameObject.layer = LayerMask.NameToLayer("Collectable");
+
+            // Update the following targets for remaining collectables
+            UpdateCollectableChain();
+        }
+    }
+
+    private void UpdateCollectableChain()
+    {
+        if (collectedList.Count == 0) return;
+
+        // First collectable follows player
+        collectedList[0].followTarget = transform;
+
+        // Subsequent collectables follow the previous one
+        for (int i = 1; i < collectedList.Count; i++)
+        {
+            collectedList[i].followTarget = collectedList[i - 1].transform;
+        }
     }
 }

@@ -48,7 +48,7 @@ public class GameManager : MonoBehaviour
     {
         elapsedTime += Time.deltaTime;
         float t = Mathf.Clamp01(elapsedTime / transitionTime);
-        t = t * t * (3f - 2f * t); // smoothstep easing
+        t = t * t * (3f - 2f * t); 
 
         cameraTransform.localPosition = Vector3.Lerp(startLocalPosition, gameplayLocalPosition, t);
         cameraTransform.localEulerAngles = Vector3.Lerp(startLocalEuler, gameplayLocalEuler, t);

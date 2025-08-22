@@ -1,13 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-public enum CollectableType
-{
-    Cash,
-    Gold,
-    Diamond
-}
-
 public class Collectable : MonoBehaviour
 {
     [Header("Collectable Settings")]
@@ -15,30 +8,59 @@ public class Collectable : MonoBehaviour
     public float value = 1f;
     public bool isCollected = false;
 
+    [Header("Mesh References")]
+    public GameObject cashMesh;
+    public GameObject goldMesh;
+    public GameObject diamondMesh;
+
     [Header("Following Behavior")]
     public Transform followTarget;
     public float collectDistance = 2f;
     public float followSpeed = 8f;
-    public float rotationSpeed = 90f;
 
     private Vector3 followOffset;
-    public bool transformLock = false;
+    private bool isProcessing = false;
 
     void Start()
     {
-        // Set initial values based on type
+        UpdateCollectableType(type);
+    }
+
+    public void UpdateCollectableType(CollectableType newType)
+    {
+        type = newType;
+
+        if (cashMesh != null) cashMesh.SetActive(false);
+        if (cashMesh != null) cashMesh.SetActive(false);
+        if (goldMesh != null) goldMesh.SetActive(false);
+        if (diamondMesh != null) diamondMesh.SetActive(false);
+
         switch (type)
         {
             case CollectableType.Cash:
                 value = 1f;
+                if (cashMesh != null) cashMesh.SetActive(true);
                 break;
             case CollectableType.Gold:
                 value = 5f;
+                if (goldMesh != null) goldMesh.SetActive(true);
                 break;
             case CollectableType.Diamond:
                 value = 10f;
+                if (diamondMesh != null) diamondMesh.SetActive(true);
                 break;
         }
+    }
+
+    // New method to handle transformation
+    public void TryTransform()
+    {
+        if (type == CollectableType.Diamond) return;
+
+        CollectableType newType = type == CollectableType.Cash ?
+            CollectableType.Gold : CollectableType.Diamond;
+
+        UpdateCollectableType(newType);
     }
 
     void Update()
@@ -49,88 +71,56 @@ public class Collectable : MonoBehaviour
         }
     }
 
-    //private void FollowTarget()
-    //{
-    //    //Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
-    //    //targetPosition.y = transform.position.y;
-
-    //    //transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
-
-    //    Vector3 targetPosition = followTarget.position + followTarget.forward * collectDistance;
-    //    targetPosition.y = followTarget.position.y; // Keep same height as target
-    //    transform.position = targetPosition;
-
-    //    // Optional: match rotation exactly
-    //}
-
     private void FollowTarget()
     {
         if (followTarget == null) return;
 
-        // Snap directly in front along world Z axis, ignoring X/Y rotation
-        Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
-        targetPosition.y = followTarget.position.y; // Keep same height as target
-        transform.position = targetPosition;
+        Vector3 targetPosition = followTarget.position + followTarget.forward * collectDistance;
+        targetPosition.y = followTarget.position.y;
 
-        // Match rotation exactly (optional)
+        transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
         transform.rotation = followTarget.rotation;
     }
 
-
     public void Collect(PlayerController player)
     {
-        if (isCollected) return;
+        if (isCollected || isProcessing) return;
 
+        isProcessing = true;
         isCollected = true;
-        gameObject.layer = LayerMask.NameToLayer("Default");
+        gameObject.layer = LayerMask.NameToLayer("Collected");
+
+        // Add to player's collection - using your existing method
         player.Collect(this);
+
+        isProcessing = false;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!isCollected) return;
+        if (!isCollected || isProcessing) return;
 
+        // Only the tip collectable can collect new money
         PlayerController player = FindPlayerInChain();
-        if (player == null) return;
-
-        // --- Collect new money if this is the tip ---
-        if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
+        if (player != null && player.collectedList.Count > 0 && this == player.collectedList[0])
         {
-            Collectable newCollectable = other.GetComponent<Collectable>();
-            if (newCollectable != null && !newCollectable.isCollected)
+            if (other.gameObject.layer == LayerMask.NameToLayer("Collectable"))
             {
-                newCollectable.Collect(player);
+                Collectable newCollectable = other.GetComponent<Collectable>();
+                if (newCollectable != null && !newCollectable.isCollected && newCollectable != this)
+                {
+                    newCollectable.Collect(player);
+                }
             }
         }
 
-        //// --- Handle Transformer gate ---
-        //if (other.CompareTag("Transformer"))
-        //{
-        //    TransformerGate gate = other.GetComponent<TransformerGate>();
-        //    if (gate != null)
-        //    {
-        //        gate.TransformIndividualCollectable(this);
-        //    }
-        //}
-
-        // --- Handle Transformer gate ---
+        // Handle transformer gate
         if (other.CompareTag("Transformer"))
         {
-            var gate = other.GetComponent<TransformerGate>();
-            if (gate != null)
-            {
-                // DEBUG
-                Debug.Log($"[Collectable:{name} id={GetInstanceID()} type={type} t={Time.time:F3}s] Calling Transform on gate {gate.name}.");
-                gate.TransformIndividualCollectable(this);
-            }
-            else
-            {
-                Debug.LogWarning($"[Collectable:{name}] Transformer tag found but no TransformerGate component on {other.name}.");
-            }
+            TryTransform();
         }
 
-
-        // --- Handle ATM gate ---
+        // Handle ATM gate - using your existing method name
         if (other.CompareTag("ATM"))
         {
             ATMGate atm = other.GetComponent<ATMGate>();
@@ -140,36 +130,25 @@ public class Collectable : MonoBehaviour
             }
         }
 
-        // --- Handle obstacles ---
-        switch (other.tag)
+        // Handle other interactions using your existing methods
+        if (player != null)
         {
-            case "Drop":
-                player.DropFromCollectable(this);
-                break;
-
-            case "Destroy":
-                player.DestroyFromCollectable(this);
-                break;
-
-            case "Deposit":
-                player.DepositFromCollectable(this);
-                break;
+            switch (other.tag)
+            {
+                case "Drop":
+                    player.DropFromCollectable(this);
+                    break;
+                case "Destroy":
+                    player.DestroyFromCollectable(this);
+                    break;
+                case "Deposit":
+                    player.DepositFromCollectable(this);
+                    break;
+            }
         }
     }
 
-
-
-
-
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Transformer"))
-        {
-            transformLock = false; // reset lock when leaving transformer
-        }
-    }
-
+    // Your existing method
     public PlayerController FindPlayerInChain()
     {
         Transform current = followTarget;
