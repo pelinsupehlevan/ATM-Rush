@@ -1,6 +1,3 @@
-
-
-// Updated PlayerController.cs - Clean up the Collect method
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -151,6 +148,7 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+
     public void Collect(Collectable newCollectable)
     {
         if (collectedList.Contains(newCollectable))
@@ -163,7 +161,7 @@ public class PlayerController : MonoBehaviour
 
         collectedList.Add(newCollectable);
 
-        // Set follow target
+        // Set follow target and distance
         Transform target;
         if (collectedList.Count == 1)
         {
@@ -194,15 +192,44 @@ public class PlayerController : MonoBehaviour
         if (!collectedList.Contains(collectable)) return;
 
         int index = collectedList.IndexOf(collectable);
+        Debug.Log($"[PLAYER] Removing {collectable.name} from chain at index {index}");
 
-        // Update following chain
+        // Update following chain - connect the gap
         if (index < collectedList.Count - 1)
         {
             Collectable nextCollectable = collectedList[index + 1];
-            nextCollectable.followTarget = collectable.followTarget;
+            if (index > 0)
+            {
+                // Connect to previous collectable
+                nextCollectable.followTarget = collectedList[index - 1].transform;
+            }
+            else
+            {
+                // Connect to player (first in chain)
+                nextCollectable.followTarget = this.transform;
+                nextCollectable.collectDistance = 2f;
+            }
         }
 
         collectedList.RemoveAt(index);
+
+        // Update distances for remaining chain
+        UpdateCollectableDistances();
+    }
+
+    private void UpdateCollectableDistances()
+    {
+        for (int i = 0; i < collectedList.Count; i++)
+        {
+            if (i == 0)
+            {
+                collectedList[i].collectDistance = 2f; // First follows player
+            }
+            else
+            {
+                collectedList[i].collectDistance = 1f; // Others follow previous
+            }
+        }
     }
 
     public void DropFromCollectable(Collectable collectable)
@@ -258,19 +285,5 @@ public class PlayerController : MonoBehaviour
         collectedList.RemoveRange(index, collectedList.Count - index);
 
         Debug.Log("Current Money: " + moneyAmount);
-    }
-
-    private void UpdateCollectableChain()
-    {
-        if (collectedList.Count == 0) return;
-
-        // First collectable follows player
-        collectedList[0].followTarget = transform;
-
-        // Subsequent collectables follow the previous one
-        for (int i = 1; i < collectedList.Count; i++)
-        {
-            collectedList[i].followTarget = collectedList[i - 1].transform;
-        }
     }
 }

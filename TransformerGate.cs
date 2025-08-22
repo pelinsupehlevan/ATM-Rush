@@ -4,26 +4,59 @@ public class TransformerGate : MonoBehaviour
 {
     [Header("Debug")]
     public bool showGizmos = true;
+    public bool verboseDebug = true;
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"[TRANSFORMER] Gate triggered by {other.gameObject.name}, Tag: {other.tag}, Layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+        if (verboseDebug)
+        {
+            Debug.Log($"[TRANSFORMER] Gate triggered by {other.gameObject.name}, Tag: {other.tag}, Layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+            Debug.Log($"[TRANSFORMER] Other collider isTrigger: {other.isTrigger}, enabled: {other.enabled}");
+        }
 
-        // Also check if it's a collected object following the player
+        // Check for collectable component
         Collectable collectable = other.GetComponent<Collectable>();
         if (collectable != null)
         {
-            Debug.Log($"[TRANSFORMER] Found collectable {collectable.name}, isCollected: {collectable.isCollected}, Type: {collectable.type}");
+            if (verboseDebug)
+            {
+                Debug.Log($"[TRANSFORMER] Found collectable {collectable.name}, isCollected: {collectable.isCollected}, Type: {collectable.type}");
+            }
 
             if (collectable.isCollected)
             {
-                Debug.Log($"[TRANSFORMER] Transforming {collectable.name}");
+                Debug.Log($"[TRANSFORMER] Transforming {collectable.name} from {collectable.type}");
                 collectable.TryTransform();
+                Debug.Log($"[TRANSFORMER] After transformation: {collectable.name} is now {collectable.type}");
+            }
+            else
+            {
+                Debug.Log($"[TRANSFORMER] Collectable {collectable.name} is not collected yet, ignoring");
             }
         }
         else
         {
-            Debug.Log($"[TRANSFORMER] No Collectable component found");
+            if (verboseDebug)
+            {
+                Debug.Log($"[TRANSFORMER] No Collectable component found on {other.gameObject.name}");
+
+                // Check if it has a collectable in children
+                Collectable childCollectable = other.GetComponentInChildren<Collectable>();
+                if (childCollectable != null)
+                {
+                    Debug.Log($"[TRANSFORMER] Found collectable in children: {childCollectable.name}");
+                }
+            }
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        // Additional debug for items that might be stuck
+        Collectable collectable = other.GetComponent<Collectable>();
+        if (collectable != null && collectable.isCollected)
+        {
+            Debug.Log($"[TRANSFORMER] Item {collectable.name} is staying in trigger zone");
         }
     }
 

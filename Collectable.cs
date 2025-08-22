@@ -25,6 +25,9 @@ public class Collectable : MonoBehaviour
     public float collectDistance = 2f;
     public float followSpeed = 8f;
 
+    [Header("Chain Tip Collection")]
+    public float chainTipCollectionRadius = 1.5f; // Increased radius for better detection
+
     private Vector3 followOffset;
     private bool isProcessing = false;
 
@@ -102,28 +105,16 @@ public class Collectable : MonoBehaviour
         UpdateCollectableType(startType);
     }
 
-
-    //void Update()
-    //{
-    //    if (isCollected && followTarget != null)
-    //    {
-    //        FollowTarget();
-    //    }
-    //}
     void Update()
     {
         if (isCollected && followTarget != null)
         {
             FollowTarget();
 
-            // Debug: Show chain tip position and detection range
+            // Chain tip collection logic
             if (IsChainTip())
             {
-                Debug.DrawRay(transform.position, Vector3.forward * 2f, Color.red);
-                Debug.DrawRay(transform.position, Vector3.right * 2f, Color.red);
-
-                // Manually check for nearby collectables
-                CheckForNearbyCollectables();
+                CheckAndCollectNearby();
             }
         }
     }
@@ -135,18 +126,32 @@ public class Collectable : MonoBehaviour
                this == player.collectedList[player.collectedList.Count - 1];
     }
 
-    private void CheckForNearbyCollectables()
+    private void CheckAndCollectNearby()
     {
-        Collider[] nearbyCollectables = Physics.OverlapSphere(transform.position, 3f,
-            LayerMask.GetMask("Collectable"));
+        // Use a larger radius and check both Collectable and Collected layers
+        LayerMask collectableMask = LayerMask.GetMask("Collectable");
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, chainTipCollectionRadius, collectableMask);
 
-        foreach (Collider col in nearbyCollectables)
+        foreach (Collider col in nearbyColliders)
         {
-            if (col.gameObject != gameObject && !col.GetComponent<Collectable>().isCollected)
+            if (col.gameObject == gameObject) continue; // Skip self
+
+            Collectable nearbyCollectable = col.GetComponent<Collectable>();
+            if (nearbyCollectable != null && !nearbyCollectable.isCollected && !nearbyCollectable.isProcessing)
             {
-                Debug.Log($"[CHAIN TIP] {gameObject.name} detected {col.gameObject.name} at distance: " +
-                         Vector3.Distance(transform.position, col.transform.position));
-                Debug.DrawLine(transform.position, col.transform.position, Color.yellow, 0.1f);
+                float distance = Vector3.Distance(transform.position, col.transform.position);
+                Debug.Log($"[CHAIN TIP] {gameObject.name} found collectible {nearbyCollectable.name} at distance: {distance}");
+
+                // Collect if close enough
+                if (distance <= chainTipCollectionRadius)
+                {
+                    PlayerController player = FindPlayerInChain();
+                    if (player != null)
+                    {
+                        Debug.Log($"[CHAIN TIP] {gameObject.name} collecting {nearbyCollectable.name}");
+                        nearbyCollectable.Collect(player);
+                    }
+                }
             }
         }
     }
@@ -155,11 +160,8 @@ public class Collectable : MonoBehaviour
     {
         if (followTarget == null) return;
 
-        Vector3 targetPosition = followTarget.position + followTarget.forward * collectDistance;
-        targetPosition.y = followTarget.position.y;
-
+        Vector3 targetPosition = followTarget.position + Vector3.forward * collectDistance;
         transform.position = Vector3.Lerp(transform.position, targetPosition, followSpeed * Time.deltaTime);
-        transform.rotation = followTarget.rotation;
     }
 
     public void Collect(PlayerController player, Transform target)
@@ -199,79 +201,74 @@ public class Collectable : MonoBehaviour
     {
         Debug.Log($"[COLLECTABLE] {gameObject.name} OnTriggerEnter with {other.gameObject.name}, IsCollected: {isCollected}, IsProcessing: {isProcessing}");
 
-        // If not collected yet, check what's collecting us
+        // Handle collection logic for uncollected items
         if (!isCollected && !isProcessing)
         {
-            // FIRST check if it's a collected collectable (chain tip)
+            // Check if it's the player directly (only if player has empty chain)
+            PlayerController player = other.GetComponent<PlayerController>();
+            if (player != null && player.collectedList.Count == 0)
+            {
+                Debug.Log($"[COLLECTABLE] {gameObject.name} being collected by player (empty chain)");
+                return; // Let PlayerController handle this
+            }
+
+            // Check if it's a chain tip collectable
             Collectable tipCollectable = other.GetComponent<Collectable>();
             if (tipCollectable != null && tipCollectable.isCollected)
             {
                 PlayerController foundPlayer = tipCollectable.FindPlayerInChain();
-                if (foundPlayer != null && foundPlayer.collectedList.Count > 0 && tipCollectable == foundPlayer.collectedList[foundPlayer.collectedList.Count - 1])
+                if (foundPlayer != null && foundPlayer.collectedList.Count > 0 &&
+                    tipCollectable == foundPlayer.collectedList[foundPlayer.collectedList.Count - 1])
                 {
                     Debug.Log($"[COLLECTABLE] {gameObject.name} being collected by chain tip {tipCollectable.name}");
                     this.Collect(foundPlayer);
                     return;
                 }
             }
+        }
 
-            // THEN check if it's the player (only allow if player has empty chain)
-            PlayerController player = other.GetComponent<PlayerController>();
-            if (player != null)
+        // Handle gate interactions (ONLY for collected items)
+        if (isCollected && !isProcessing)
+        {
+            // Handle transformer gate
+            if (other.CompareTag("Transformer"))
             {
-                if (player.collectedList.Count == 0)
-                {
-                    Debug.Log($"[COLLECTABLE] {gameObject.name} being collected by player (empty chain)");
-                    return; // Let player handle collection
-                }
-                else
-                {
-                    Debug.Log($"[COLLECTABLE] {gameObject.name} - Player has chain, ignoring direct collection");
-                    return; // Player has chain, don't collect directly
-                }
+                Debug.Log($"[COLLECTABLE] {gameObject.name} hit transformer gate. Current type: {type}");
+                TryTransform();
+                return;
             }
 
-        }
-
-        // REST OF YOUR EXISTING LOGIC FOR ALREADY COLLECTED ITEMS AND OTHER INTERACTIONS
-        if (!isCollected || isProcessing) return;
-
-        // Handle transformer gate
-        if (other.CompareTag("Transformer"))
-        {
-            Debug.Log($"[COLLECTABLE] {gameObject.name} hit transformer gate. Current type: {type}");
-            TryTransform();
-        }
-
-        // Handle ATM gate
-        if (other.CompareTag("ATM"))
-        {
-            Debug.Log($"[COLLECTABLE] {gameObject.name} hit ATM gate");
-            ATMGate atm = other.GetComponent<ATMGate>();
-            if (atm != null)
+            // Handle ATM gate
+            if (other.CompareTag("ATM"))
             {
-                atm.DepositIndividualCollectable(this);
+                Debug.Log($"[COLLECTABLE] {gameObject.name} hit ATM gate");
+                ATMGate atm = other.GetComponent<ATMGate>();
+                if (atm != null)
+                {
+                    atm.DepositIndividualCollectable(this);
+                }
+                return;
             }
-        }
 
-        // Handle other interactions
-        PlayerController chainPlayer = FindPlayerInChain();
-        if (chainPlayer != null)
-        {
-            switch (other.tag)
+            // Handle other interactions
+            PlayerController chainPlayer = FindPlayerInChain();
+            if (chainPlayer != null)
             {
-                case "Drop":
-                    Debug.Log($"[COLLECTABLE] {gameObject.name} hit drop zone");
-                    chainPlayer.DropFromCollectable(this);
-                    break;
-                case "Destroy":
-                    Debug.Log($"[COLLECTABLE] {gameObject.name} hit destroy zone");
-                    chainPlayer.DestroyFromCollectable(this);
-                    break;
-                case "Deposit":
-                    Debug.Log($"[COLLECTABLE] {gameObject.name} hit deposit zone");
-                    chainPlayer.DepositFromCollectable(this);
-                    break;
+                switch (other.tag)
+                {
+                    case "Drop":
+                        Debug.Log($"[COLLECTABLE] {gameObject.name} hit drop zone");
+                        chainPlayer.DropFromCollectable(this);
+                        break;
+                    case "Destroy":
+                        Debug.Log($"[COLLECTABLE] {gameObject.name} hit destroy zone");
+                        chainPlayer.DestroyFromCollectable(this);
+                        break;
+                    case "Deposit":
+                        Debug.Log($"[COLLECTABLE] {gameObject.name} hit deposit zone");
+                        chainPlayer.DepositFromCollectable(this);
+                        break;
+                }
             }
         }
     }
@@ -292,5 +289,15 @@ public class Collectable : MonoBehaviour
             else break;
         }
         return null;
+    }
+
+    // Debug visualization
+    private void OnDrawGizmosSelected()
+    {
+        if (isCollected && IsChainTip())
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, chainTipCollectionRadius);
+        }
     }
 }
