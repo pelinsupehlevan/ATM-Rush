@@ -8,10 +8,10 @@ public class GameManager : MonoBehaviour
     [Header("Camera Transition")]
     public Transform cameraTransform; 
 
-    public Vector3 startLocalPosition = new Vector3(0f, 4f, 5f);
+    public Vector3 startLocalPosition = new Vector3(0f, 5f, 7f);
     public Vector3 startLocalEuler = new Vector3(30f, 180f, 0f);
 
-    public Vector3 gameplayLocalPosition = new Vector3(0f, 4f, -3f);
+    public Vector3 gameplayLocalPosition = new Vector3(0f, 8f, -7f);
     public Vector3 gameplayLocalEuler = new Vector3(30f, 0f, 0f);
 
     public float transitionTime = 2f;

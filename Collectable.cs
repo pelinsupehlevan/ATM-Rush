@@ -26,7 +26,7 @@ public class Collectable : MonoBehaviour
     public float followSpeed = 8f;
 
     [Header("Chain Tip Collection")]
-    public float chainTipCollectionRadius = 1.5f; 
+    public float chainTipCollectionRadius = 1.5f;
 
     private Vector3 followOffset;
     private bool isProcessing = false;
@@ -68,7 +68,7 @@ public class Collectable : MonoBehaviour
         if (type == CollectableType.Diamond)
         {
             Debug.Log($"[COLLECTABLE] {gameObject.name} is already Diamond, no transformation");
-            return; 
+            return;
         }
 
         CollectableType newType = type == CollectableType.Cash ?
@@ -127,7 +127,7 @@ public class Collectable : MonoBehaviour
 
         foreach (Collider col in nearbyColliders)
         {
-            if (col.gameObject == gameObject) continue; 
+            if (col.gameObject == gameObject) continue;
 
             Collectable nearbyCollectable = col.GetComponent<Collectable>();
             if (nearbyCollectable != null && !nearbyCollectable.isCollected && !nearbyCollectable.isProcessing)
@@ -195,7 +195,7 @@ public class Collectable : MonoBehaviour
             if (player != null && player.collectedList.Count == 0)
             {
                 Debug.Log($"[COLLECTABLE] {gameObject.name} being collected by player (empty chain)");
-                return; 
+                return;
             }
 
             Collectable tipCollectable = other.GetComponent<Collectable>();

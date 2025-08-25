@@ -20,9 +20,9 @@ public class PlayerController : MonoBehaviour
     public List<Collectable> collectedList = new List<Collectable>();
 
     [Header("Money System")]
-    public float permanentMoney = 0f;    
-    public float inGameMoney = 0f;       
-    public float depositedThisLevel = 0f; 
+    public float permanentMoney = 0f;
+    public float inGameMoney = 0f;
+    public float depositedThisLevel = 0f;
 
     private Vector2 startPosition;
     private Vector2 lastPosition;
@@ -46,7 +46,7 @@ public class PlayerController : MonoBehaviour
     {
         HandleSwipeInput();
         HandleMovement();
-        UpdateInGameMoney(); 
+        UpdateInGameMoney();
     }
 
     private void UpdateInGameMoney()
@@ -232,11 +232,11 @@ public class PlayerController : MonoBehaviour
         {
             if (i == 0)
             {
-                collectedList[i].collectDistance = 2f; 
+                collectedList[i].collectDistance = 2f;
             }
             else
             {
-                collectedList[i].collectDistance = 1f; 
+                collectedList[i].collectDistance = 1f;
             }
         }
     }
