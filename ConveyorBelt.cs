@@ -6,16 +6,20 @@ public class ConveyorBelt : MonoBehaviour
 {
     [Header("Conveyor Settings")]
     public float conveyorSpeed = 3f;
-    public Transform startPoint;
-    public Transform endPoint;
+    public Transform endPoint; 
     public float collectableSpacing = 1f;
 
     [Header("Counting")]
     public float countDelay = 0.5f;
 
+    [Header("Player Positioning")]
+    public Transform playerTargetPosition; 
+    public float playerMoveSpeed = 2f;
+
     private bool isActive = false;
     private UIManager uiManager;
     private LevelManager levelManager;
+    private Vector3 dynamicStartPoint;
 
     void Start()
     {
@@ -25,11 +29,27 @@ public class ConveyorBelt : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        PlayerController player = other.GetComponent<PlayerController>();
-        if (player != null && !isActive && player.collectedList.Count > 0)
+        Debug.Log($"[CONVEYOR] OnTriggerEnter with {other.gameObject.name}, Tag: {other.tag}, Layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+
+        Collectable tipCollectable = other.GetComponent<Collectable>();
+        if (tipCollectable != null && tipCollectable.isCollected && !isActive)
         {
-            startPoint = player.transform;
-            StartCoroutine(ProcessCollectables(player));
+            PlayerController player = tipCollectable.FindPlayerInChain();
+            if (player != null && player.collectedList.Count > 0 &&
+                tipCollectable == player.collectedList[player.collectedList.Count - 1])
+            {
+                Debug.Log($"[CONVEYOR] Chain tip {tipCollectable.name} hit conveyor, starting processing");
+                dynamicStartPoint = tipCollectable.transform.position;
+                StartCoroutine(ProcessCollectables(player));
+            }
+            else
+            {
+                Debug.Log($"[CONVEYOR] Collectable {tipCollectable.name} is not chain tip or no player found");
+            }
+        }
+        else
+        {
+            Debug.Log($"[CONVEYOR] Not a valid collectable for processing");
         }
     }
 
@@ -37,50 +57,47 @@ public class ConveyorBelt : MonoBehaviour
     {
         isActive = true;
 
-        // Stop player movement
         player.enabled = false;
+
+        if (playerTargetPosition != null)
+        {
+            StartCoroutine(MovePlayerToCenter(player));
+        }
 
         // Get all collectables and reverse order (process from tip backwards)
         List<Collectable> collectables = new List<Collectable>(player.collectedList);
         collectables.Reverse();
 
-        float totalMoney = 0f;
+        float totalLevelMoney = 0f;
         int totalCount = 0;
 
         foreach (Collectable collectable in collectables)
         {
-            // Move collectable to conveyor start
             yield return StartCoroutine(MoveToConveyor(collectable));
 
-            // Move along conveyor
             yield return StartCoroutine(MoveAlongConveyor(collectable));
 
-            // Add to totals
-            totalMoney += collectable.value;
+            totalLevelMoney += collectable.value;
             totalCount++;
 
-            // Update UI
             if (uiManager != null)
             {
-                uiManager.UpdateMoneyCount(totalMoney);
+                uiManager.UpdateLevelMoney(totalLevelMoney);
                 uiManager.UpdateCollectableCount(totalCount);
             }
 
-            // Destroy the collectable
+            player.RemoveCollectableFromChain(collectable);
+
             Destroy(collectable.gameObject);
 
-            // Wait before processing next
-            yield return new WaitForSeconds(countDelay);
+            //yield return new WaitForSeconds(countDelay);
         }
 
-        // Clear player's list and add money
-        player.collectedList.Clear();
-        player.moneyAmount += totalMoney;
+        player.CompleteLevel();
 
-        // Complete the level
         if (levelManager != null)
         {
-            levelManager.CompleteLevel(totalMoney, totalCount);
+            levelManager.CompleteLevel(totalLevelMoney, totalCount);
         }
 
         yield return new WaitForSeconds(1f);
@@ -88,12 +105,33 @@ public class ConveyorBelt : MonoBehaviour
         isActive = false;
     }
 
+    private IEnumerator MovePlayerToCenter(PlayerController player)
+    {
+        if (playerTargetPosition == null) yield break;
+
+        Vector3 startPos = player.transform.position;
+        Vector3 targetPos = new Vector3(playerTargetPosition.position.x, startPos.y, startPos.z);
+
+        float moveTime = Vector3.Distance(startPos, targetPos) / playerMoveSpeed;
+        float elapsed = 0f;
+
+        while (elapsed < moveTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / moveTime;
+
+            player.transform.position = Vector3.Lerp(startPos, targetPos, t);
+            yield return null;
+        }
+
+        player.transform.position = targetPos;
+    }
+
     private IEnumerator MoveToConveyor(Collectable collectable)
     {
         Vector3 startPos = collectable.transform.position;
-        Vector3 targetPos = startPoint.position;
+        Vector3 targetPos = dynamicStartPoint;
 
-        // Rotate the collectable 90 degrees
         Quaternion startRot = collectable.transform.rotation;
         Quaternion targetRot = startRot * Quaternion.Euler(0, 90, 0);
 
@@ -116,7 +154,7 @@ public class ConveyorBelt : MonoBehaviour
 
     private IEnumerator MoveAlongConveyor(Collectable collectable)
     {
-        Vector3 startPos = startPoint.position;
+        Vector3 startPos = dynamicStartPoint;
         Vector3 endPos = endPoint.position;
 
         float distance = Vector3.Distance(startPos, endPos);

@@ -14,7 +14,6 @@ public class TransformerGate : MonoBehaviour
             Debug.Log($"[TRANSFORMER] Other collider isTrigger: {other.isTrigger}, enabled: {other.enabled}");
         }
 
-        // Check for collectable component
         Collectable collectable = other.GetComponent<Collectable>();
         if (collectable != null)
         {
@@ -40,7 +39,6 @@ public class TransformerGate : MonoBehaviour
             {
                 Debug.Log($"[TRANSFORMER] No Collectable component found on {other.gameObject.name}");
 
-                // Check if it has a collectable in children
                 Collectable childCollectable = other.GetComponentInChildren<Collectable>();
                 if (childCollectable != null)
                 {
@@ -52,7 +50,6 @@ public class TransformerGate : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        // Additional debug for items that might be stuck
         Collectable collectable = other.GetComponent<Collectable>();
         if (collectable != null && collectable.isCollected)
         {
@@ -60,7 +57,6 @@ public class TransformerGate : MonoBehaviour
         }
     }
 
-    // Visual helper to see the gate's trigger area
     private void OnDrawGizmos()
     {
         if (!showGizmos) return;

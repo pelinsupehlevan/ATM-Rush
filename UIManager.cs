@@ -23,6 +23,10 @@ public class UIManager : MonoBehaviour
     public Button nextLevelButton;
     public Button restartButton;
 
+    [Header("Conveyor Belt UI")]
+    public TextMeshProUGUI conveyorMoneyText; 
+    public TextMeshProUGUI conveyorCountText; 
+
     [Header("Game Over UI")]
     public GameObject gameOverPanel;
     public Button restartGameButton;
@@ -43,7 +47,7 @@ public class UIManager : MonoBehaviour
     }
 
     void Update()
-    {        
+    {
         if (!gameStarted && Input.GetMouseButtonDown(0))
         {
             StartGame();
@@ -81,7 +85,7 @@ public class UIManager : MonoBehaviour
             gameOverPanel.SetActive(false);
 
         if (startMoneyText != null && player != null)
-            startMoneyText.text = $"Money: ${player.moneyAmount:F0}";
+            startMoneyText.text = $"Money: ${player.permanentMoney:F0}";
 
         if (startLevelText != null && levelManager != null)
             startLevelText.text = $"Level {levelManager.currentLevel}";
@@ -106,24 +110,32 @@ public class UIManager : MonoBehaviour
 
     public void UpdateGameUI()
     {
-        if (gameMoneyText != null)
-            gameMoneyText.text = $"${player.moneyAmount:F0}";
+        if (gameMoneyText != null && player != null)
+        {
+            gameMoneyText.text = $"${player.inGameMoney:F0}";
+        }
 
-        if (gameCollectableCountText != null)
+        if (gameCollectableCountText != null && player != null)
             gameCollectableCountText.text = $"Collected: {player.collectedList.Count}";
 
         if (gameLevelText != null && levelManager != null)
             gameLevelText.text = $"Level {levelManager.currentLevel}";
     }
 
-    public void UpdateMoneyCount(float money)
+    public void UpdateLevelMoney(float money)
     {
+        if (conveyorMoneyText != null)
+            conveyorMoneyText.text = $"Level Money: ${money:F0}";
+
         if (levelCompleteMoneyText != null)
             levelCompleteMoneyText.text = $"Level Money: ${money:F0}";
     }
 
     public void UpdateCollectableCount(int count)
     {
+        if (conveyorCountText != null)
+            conveyorCountText.text = $"Items Processed: {count}";
+
         if (levelCompleteCountText != null)
             levelCompleteCountText.text = $"Items Collected: {count}";
     }
@@ -149,5 +161,14 @@ public class UIManager : MonoBehaviour
     {
         if (gameOverPanel != null)
             gameOverPanel.SetActive(true);
+    }
+
+    public void SetConveyorUIActive(bool active)
+    {
+        if (conveyorMoneyText != null)
+            conveyorMoneyText.gameObject.SetActive(active);
+
+        if (conveyorCountText != null)
+            conveyorCountText.gameObject.SetActive(active);
     }
 }

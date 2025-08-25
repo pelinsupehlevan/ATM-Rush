@@ -54,7 +54,7 @@ public class LevelManager : MonoBehaviour
 
         if (uiManager != null)
         {
-          //  uiManager.UpdateUI();
+            uiManager.SetConveyorUIActive(false);
         }
 
         LoadLevelContent();
@@ -63,31 +63,12 @@ public class LevelManager : MonoBehaviour
     private void LoadLevelContent()
     {
         ClearLevelContent();
-
-        //if (levelPrefabs != null && levelPrefabs.Length > 0)
-        //{
-        //    int levelIndex = Mathf.Min(currentLevel - 1, levelPrefabs.Length - 1);
-        //    if (levelPrefabs[levelIndex] != null)
-        //    {
-        //        Instantiate(levelPrefabs[levelIndex]);
-        //    }
-        //}
+        //sonra doldurcam
     }
 
     private void ClearLevelContent()
     {
-       // GameObject[] collectables = GameObject.FindGameObjectsWithTag("Collectable");
-        //GameObject[] obstacles = GameObject.FindGameObjectsWithTag("Obstacle");
-
-        //foreach (GameObject obj in collectables)
-        //{
-        //    Destroy(obj);
-        //}
-
-        //foreach (GameObject obj in obstacles)
-        //{
-        //    Destroy(obj);
-        //}
+        //sonra doldurcam
     }
 
     private void CheckLevelProgress()
@@ -98,10 +79,6 @@ public class LevelManager : MonoBehaviour
         float totalDistance = Vector3.Distance(levelStartPoint.position, levelEndPoint.position);
         float progress = 1f - (distanceToEnd / totalDistance);
 
-        if (uiManager != null)
-        {
-          //  uiManager.UpdateProgress(Mathf.Clamp01(progress));
-        }
 
         if (distanceToEnd < 5f && !levelCompleted)
         {
@@ -114,10 +91,15 @@ public class LevelManager : MonoBehaviour
         if (conveyorBelt != null)
         {
             levelCompleted = true;
+
+            if (uiManager != null)
+            {
+                uiManager.SetConveyorUIActive(true);
+            }
         }
         else
         {
-            CompleteLevel(0f, 0); //fallback
+            CompleteLevel(0f, 0); // fallback
         }
     }
 
@@ -126,18 +108,18 @@ public class LevelManager : MonoBehaviour
         levelCompleted = true;
 
         float levelTime = Time.time - levelStartTime;
-;
 
         if (uiManager != null)
         {
-            uiManager.ShowLevelComplete(levelMoney, itemCount, player.moneyAmount);
+            uiManager.SetConveyorUIActive(false);
+            uiManager.ShowLevelComplete(levelMoney, itemCount, player.permanentMoney);
         }
 
         SaveProgress();
 
         Debug.Log($"Level {currentLevel} completed! Money: ${levelMoney}, Items: {itemCount}, Time: {levelTime:F1}s");
+        Debug.Log($"Player permanent money: ${player.permanentMoney}");
     }
-
 
     public void NextLevel()
     {
@@ -156,7 +138,7 @@ public class LevelManager : MonoBehaviour
     {
         if (uiManager != null)
         {
-           // uiManager.HideAllPanels();
+            uiManager.SetConveyorUIActive(false);
         }
 
         if (player != null && levelStartPoint != null)
@@ -164,12 +146,12 @@ public class LevelManager : MonoBehaviour
             player.transform.position = levelStartPoint.position;
             player.transform.rotation = levelStartPoint.rotation;
             player.collectedList.Clear();
+            player.inGameMoney = 0f; 
             player.enabled = true;
         }
 
         InitializeLevel();
 
-  
         if (gameManager != null)
         {
             gameManager.StartGame();
@@ -181,7 +163,8 @@ public class LevelManager : MonoBehaviour
         currentLevel = 1;
         if (player != null)
         {
-            player.moneyAmount = 0f;
+            player.permanentMoney = 0f; 
+            player.inGameMoney = 0f;
         }
         RestartLevel();
     }
@@ -189,13 +172,13 @@ public class LevelManager : MonoBehaviour
     private void ShowGameComplete()
     {
         Debug.Log("Congratulations! You completed all levels!");
-     
+        Debug.Log($"Final money: ${player.permanentMoney}");
     }
 
     private void SaveProgress()
     {
         PlayerPrefs.SetInt("CurrentLevel", currentLevel);
-        PlayerPrefs.SetFloat("TotalMoney", player?.moneyAmount ?? 0f);
+        PlayerPrefs.SetFloat("PermanentMoney", player?.permanentMoney ?? 0f);
         PlayerPrefs.Save();
     }
 
@@ -204,7 +187,7 @@ public class LevelManager : MonoBehaviour
         currentLevel = PlayerPrefs.GetInt("CurrentLevel", 1);
         if (player != null)
         {
-            player.moneyAmount = PlayerPrefs.GetFloat("TotalMoney", 0f);
+            player.permanentMoney = PlayerPrefs.GetFloat("PermanentMoney", 0f);
         }
     }
 
@@ -220,7 +203,8 @@ public class LevelManager : MonoBehaviour
         currentLevel = 1;
         if (player != null)
         {
-            player.moneyAmount = 0f;
+            player.permanentMoney = 0f;
+            player.inGameMoney = 0f;
         }
         RestartLevel();
     }

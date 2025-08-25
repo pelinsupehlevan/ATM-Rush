@@ -26,7 +26,7 @@ public class Collectable : MonoBehaviour
     public float followSpeed = 8f;
 
     [Header("Chain Tip Collection")]
-    public float chainTipCollectionRadius = 1.5f; // Increased radius for better detection
+    public float chainTipCollectionRadius = 1.5f; 
 
     private Vector3 followOffset;
     private bool isProcessing = false;
@@ -40,12 +40,10 @@ public class Collectable : MonoBehaviour
     {
         type = newType;
 
-        // Deactivate all meshes first
         if (cashMesh != null) cashMesh.SetActive(false);
         if (goldMesh != null) goldMesh.SetActive(false);
         if (diamondMesh != null) diamondMesh.SetActive(false);
 
-        // Activate the correct mesh and set value
         switch (type)
         {
             case CollectableType.Cash:
@@ -63,7 +61,6 @@ public class Collectable : MonoBehaviour
         }
     }
 
-    // Handle transformation through gates
     public void TryTransform()
     {
         Debug.Log($"[COLLECTABLE] TryTransform called on {gameObject.name}. Current type: {type}");
@@ -71,7 +68,7 @@ public class Collectable : MonoBehaviour
         if (type == CollectableType.Diamond)
         {
             Debug.Log($"[COLLECTABLE] {gameObject.name} is already Diamond, no transformation");
-            return; // Already max level
+            return; 
         }
 
         CollectableType newType = type == CollectableType.Cash ?
@@ -83,7 +80,6 @@ public class Collectable : MonoBehaviour
         Debug.Log($"[COLLECTABLE] {gameObject.name} transformed to {newType}. New value: {value}");
     }
 
-    // Helper method for level building - check what's currently active
     public bool IsCashActive()
     {
         return cashMesh != null && cashMesh.activeSelf;
@@ -99,7 +95,6 @@ public class Collectable : MonoBehaviour
         return diamondMesh != null && diamondMesh.activeSelf;
     }
 
-    // Method to set initial type when spawning in level
     public void Initialize(CollectableType startType)
     {
         UpdateCollectableType(startType);
@@ -111,7 +106,6 @@ public class Collectable : MonoBehaviour
         {
             FollowTarget();
 
-            // Chain tip collection logic
             if (IsChainTip())
             {
                 CheckAndCollectNearby();
@@ -128,13 +122,12 @@ public class Collectable : MonoBehaviour
 
     private void CheckAndCollectNearby()
     {
-        // Use a larger radius and check both Collectable and Collected layers
         LayerMask collectableMask = LayerMask.GetMask("Collectable");
         Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, chainTipCollectionRadius, collectableMask);
 
         foreach (Collider col in nearbyColliders)
         {
-            if (col.gameObject == gameObject) continue; // Skip self
+            if (col.gameObject == gameObject) continue; 
 
             Collectable nearbyCollectable = col.GetComponent<Collectable>();
             if (nearbyCollectable != null && !nearbyCollectable.isCollected && !nearbyCollectable.isProcessing)
@@ -142,7 +135,6 @@ public class Collectable : MonoBehaviour
                 float distance = Vector3.Distance(transform.position, col.transform.position);
                 Debug.Log($"[CHAIN TIP] {gameObject.name} found collectible {nearbyCollectable.name} at distance: {distance}");
 
-                // Collect if close enough
                 if (distance <= chainTipCollectionRadius)
                 {
                     PlayerController player = FindPlayerInChain();
@@ -171,10 +163,8 @@ public class Collectable : MonoBehaviour
         isProcessing = true;
         isCollected = true;
 
-        // Change layer to prevent re-collection
         gameObject.layer = LayerMask.NameToLayer("Collected");
 
-        // Set follow target
         followTarget = target;
 
         isProcessing = false;
@@ -182,7 +172,6 @@ public class Collectable : MonoBehaviour
         Debug.Log($"{gameObject.name} collected by player. Type: {type}, Value: {value}");
     }
 
-    // Overload for backward compatibility with your existing PlayerController
     public void Collect(PlayerController player)
     {
         if (isCollected || isProcessing) return;
@@ -191,7 +180,6 @@ public class Collectable : MonoBehaviour
         isCollected = true;
         gameObject.layer = LayerMask.NameToLayer("Collected");
 
-        // Add to player's collection
         player.Collect(this);
 
         isProcessing = false;
@@ -201,18 +189,15 @@ public class Collectable : MonoBehaviour
     {
         Debug.Log($"[COLLECTABLE] {gameObject.name} OnTriggerEnter with {other.gameObject.name}, IsCollected: {isCollected}, IsProcessing: {isProcessing}");
 
-        // Handle collection logic for uncollected items
         if (!isCollected && !isProcessing)
         {
-            // Check if it's the player directly (only if player has empty chain)
             PlayerController player = other.GetComponent<PlayerController>();
             if (player != null && player.collectedList.Count == 0)
             {
                 Debug.Log($"[COLLECTABLE] {gameObject.name} being collected by player (empty chain)");
-                return; // Let PlayerController handle this
+                return; 
             }
 
-            // Check if it's a chain tip collectable
             Collectable tipCollectable = other.GetComponent<Collectable>();
             if (tipCollectable != null && tipCollectable.isCollected)
             {
@@ -227,18 +212,15 @@ public class Collectable : MonoBehaviour
             }
         }
 
-        // Handle gate interactions (ONLY for collected items)
         if (isCollected && !isProcessing)
         {
-            // Handle transformer gate
-            if (other.CompareTag("Transformer"))
-            {
-                Debug.Log($"[COLLECTABLE] {gameObject.name} hit transformer gate. Current type: {type}");
-                TryTransform();
-                return;
-            }
+            // if (other.CompareTag("Transformer"))
+            // {
+            //     Debug.Log($"[COLLECTABLE] {gameObject.name} hit transformer gate. Current type: {type}");
+            //     TryTransform();
+            //     return;
+            // }
 
-            // Handle ATM gate
             if (other.CompareTag("ATM"))
             {
                 Debug.Log($"[COLLECTABLE] {gameObject.name} hit ATM gate");
@@ -250,7 +232,6 @@ public class Collectable : MonoBehaviour
                 return;
             }
 
-            // Handle other interactions
             PlayerController chainPlayer = FindPlayerInChain();
             if (chainPlayer != null)
             {
@@ -289,15 +270,5 @@ public class Collectable : MonoBehaviour
             else break;
         }
         return null;
-    }
-
-    // Debug visualization
-    private void OnDrawGizmosSelected()
-    {
-        if (isCollected && IsChainTip())
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(transform.position, chainTipCollectionRadius);
-        }
     }
 }

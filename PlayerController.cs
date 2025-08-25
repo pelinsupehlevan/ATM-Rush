@@ -18,7 +18,11 @@ public class PlayerController : MonoBehaviour
 
     [Header("Collections")]
     public List<Collectable> collectedList = new List<Collectable>();
-    public float moneyAmount = 0;
+
+    [Header("Money System")]
+    public float permanentMoney = 0f;    
+    public float inGameMoney = 0f;       
+    public float depositedThisLevel = 0f; 
 
     private Vector2 startPosition;
     private Vector2 lastPosition;
@@ -35,12 +39,24 @@ public class PlayerController : MonoBehaviour
     {
         currentX = transform.position.x;
         targetX = transform.position.x;
+        UpdateInGameMoney();
     }
 
     private void Update()
     {
         HandleSwipeInput();
         HandleMovement();
+        UpdateInGameMoney(); 
+    }
+
+    private void UpdateInGameMoney()
+    {
+        float currentCollectionValue = 0f;
+        foreach (Collectable collectable in collectedList)
+        {
+            currentCollectionValue += collectable.value;
+        }
+        inGameMoney = currentCollectionValue + depositedThisLevel;
     }
 
     private void HandleMovement()
@@ -137,7 +153,6 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(Recover());
         }
 
-        // ONLY collect if chain is empty
         if (other.gameObject.layer == LayerMask.NameToLayer("Collectable") && collectedList.Count == 0)
         {
             Collectable collectable = other.GetComponent<Collectable>();
@@ -161,7 +176,6 @@ public class PlayerController : MonoBehaviour
 
         collectedList.Add(newCollectable);
 
-        // Set follow target and distance
         Transform target;
         if (collectedList.Count == 1)
         {
@@ -180,7 +194,6 @@ public class PlayerController : MonoBehaviour
 
         Debug.Log($"[PLAYER] Collected {newCollectable.name} ({newCollectable.type}). Total collected: {collectedList.Count}");
 
-        // Debug the entire chain
         for (int i = 0; i < collectedList.Count; i++)
         {
             Debug.Log($"[PLAYER] Chain[{i}]: {collectedList[i].name} (ID: {collectedList[i].GetInstanceID()})");
@@ -194,18 +207,15 @@ public class PlayerController : MonoBehaviour
         int index = collectedList.IndexOf(collectable);
         Debug.Log($"[PLAYER] Removing {collectable.name} from chain at index {index}");
 
-        // Update following chain - connect the gap
         if (index < collectedList.Count - 1)
         {
             Collectable nextCollectable = collectedList[index + 1];
             if (index > 0)
             {
-                // Connect to previous collectable
                 nextCollectable.followTarget = collectedList[index - 1].transform;
             }
             else
             {
-                // Connect to player (first in chain)
                 nextCollectable.followTarget = this.transform;
                 nextCollectable.collectDistance = 2f;
             }
@@ -213,7 +223,6 @@ public class PlayerController : MonoBehaviour
 
         collectedList.RemoveAt(index);
 
-        // Update distances for remaining chain
         UpdateCollectableDistances();
     }
 
@@ -223,11 +232,11 @@ public class PlayerController : MonoBehaviour
         {
             if (i == 0)
             {
-                collectedList[i].collectDistance = 2f; // First follows player
+                collectedList[i].collectDistance = 2f; 
             }
             else
             {
-                collectedList[i].collectDistance = 1f; // Others follow previous
+                collectedList[i].collectDistance = 1f; 
             }
         }
     }
@@ -278,12 +287,28 @@ public class PlayerController : MonoBehaviour
 
         foreach (Collectable col in toDeposit)
         {
-            moneyAmount += col.value;
+            depositedThisLevel += col.value;
             Destroy(col.gameObject);
         }
 
         collectedList.RemoveRange(index, collectedList.Count - index);
 
-        Debug.Log("Current Money: " + moneyAmount);
+        Debug.Log($"[PLAYER] Deposited money. InGame: ${inGameMoney}, DepositedThisLevel: ${depositedThisLevel}");
+    }
+
+    public void CompleteLevel()
+    {
+        permanentMoney += inGameMoney;
+        inGameMoney = 0f;
+        depositedThisLevel = 0f;
+
+        Debug.Log($"[PLAYER] Level completed. New permanent money: ${permanentMoney}");
+    }
+
+    public void StartNewLevel()
+    {
+        inGameMoney = 0f;
+        depositedThisLevel = 0f;
+        collectedList.Clear();
     }
 }

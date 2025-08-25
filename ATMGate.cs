@@ -21,8 +21,8 @@ public class ATMGate : MonoBehaviour
 
     private IEnumerator DepositAndDestroy(Collectable collectable, PlayerController player)
     {
-        player.moneyAmount += collectable.value;
-        Debug.Log($"Deposited ${collectable.value:F0}. Total Money: ${player.moneyAmount:F0}");
+        player.depositedThisLevel += collectable.value;
+        Debug.Log($"Deposited ${collectable.value:F0}. Total Money: ${player.depositedThisLevel:F0}");
 
         player.RemoveCollectableFromChain(collectable);
 
